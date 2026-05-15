@@ -1,0 +1,6 @@
+{
+  "name": "VoiceBox",
+  "description": "A team engagement tool that randomly selects meeting speakers while ensuring role diversity and fair participation weighting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
