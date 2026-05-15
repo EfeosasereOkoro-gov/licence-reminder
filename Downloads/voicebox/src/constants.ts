@@ -2,7 +2,7 @@ import { Role, Participant, Gender } from './types';
 
 export const PARTICIPANTS: Participant[] = [
   { id: '1', name: 'Aaron Harris', role: Role.Dev, gender: Gender.Male },
-  { id: '2', name: 'Abisola Fatokun', role: Role.Facilitator, gender: Gender.Male },
+  { id: '2', name: 'Abisola Fatokun', role: Role.Facilitator, gender: Gender.Female },
   { id: '3', name: 'Adunni', role: Role.Facilitator, gender: Gender.Female },
   { id: '4', name: 'Alyssa White', role: Role.ProductManager, gender: Gender.Female },
   { id: '5', name: 'Annette Joseph MBE', role: Role.DeliveryManager, gender: Gender.Female },

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "VoiceBox Dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "Downloads/voicebox", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "VoiceBox Preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "Downloads/voicebox", "run", "preview"],
+      "port": 4173
+    }
+  ]
+}
