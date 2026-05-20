@@ -1,40 +1,9 @@
 import { useRef, useState, type ChangeEvent } from 'react';
+import { extractDocument, type ExtractProgress } from '../extractDocument';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
 import { ITEM_LABELS, type ItemKey } from '../types';
-
-/**
- * Simulate reading both the document type and the expiry date from a
- * photo. A future server-side implementation would run OCR / a vision
- * model and return only these two fields. The disclaimer on the page
- * describes that intended behaviour.
- *
- * For the prototype we wait a moment, pick a random recognised document
- * type, and a plausible future expiry date.
- */
-function simulateExtractDocument(): Promise<{
-  itemType: ItemKey;
-  day: number;
-  month: number;
-  year: number;
-}> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      const types: ItemKey[] = ['drivers-licence', 'vehicle-registration', 'passport', 'permit'];
-      const itemType = types[Math.floor(Math.random() * types.length)];
-      const monthsAhead = 12 + Math.floor(Math.random() * 18);
-      const d = new Date();
-      d.setMonth(d.getMonth() + monthsAhead);
-      resolve({
-        itemType,
-        day: d.getDate(),
-        month: d.getMonth() + 1,
-        year: d.getFullYear(),
-      });
-    }, 1500);
-  });
-}
 
 function formatLongDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -45,7 +14,20 @@ function formatLongDate(d: Date): string {
   });
 }
 
-type PhotoStatus = 'idle' | 'reading' | 'done' | 'error';
+type PhotoStatus = 'idle' | 'loading' | 'reading' | 'parsing' | 'done' | 'error';
+
+function statusMessage(status: PhotoStatus, fileName: string): string {
+  switch (status) {
+    case 'loading':
+      return 'Getting the recognition engine ready — this only happens the first time.';
+    case 'reading':
+      return `Reading ${fileName}…`;
+    case 'parsing':
+      return 'Looking for the document type and expiry date…';
+    default:
+      return '';
+  }
+}
 
 export function Start() {
   usePageTitle(null);
@@ -56,8 +38,8 @@ export function Start() {
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
   const [photoFileName, setPhotoFileName] = useState<string>('');
   const [extracted, setExtracted] = useState<{
-    itemType: ItemKey;
-    expiry: Date;
+    itemType: ItemKey | null;
+    expiry: Date | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,31 +58,52 @@ export function Start() {
     if (!file) return;
 
     setPhotoFileName(file.name);
-    setPhotoStatus('reading');
     setExtracted(null);
+    setPhotoStatus('loading');
 
     try {
-      const result = await simulateExtractDocument();
-      // Reset any prior answers, then fill the two fields from the photo.
+      const result = await extractDocument(file, (p: ExtractProgress) => {
+        setPhotoStatus(p.stage);
+      });
+
+      // If we couldn't extract anything useful, ask the user to try
+      // again or fall back to the manual path. The disclaimer promises
+      // we only read these two fields, so we mustn't invent them.
+      if (!result.date && !result.itemType) {
+        setPhotoStatus('error');
+        return;
+      }
+
+      // Reset prior answers, then fill what we actually extracted.
       resetAnswers();
       setAnswers({
-        itemType: result.itemType,
-        expiryDay: String(result.day),
-        expiryMonth: String(result.month),
-        expiryYear: String(result.year),
+        itemType: result.itemType ?? null,
+        expiryDay: result.date ? String(result.date.day) : '',
+        expiryMonth: result.date ? String(result.date.month) : '',
+        expiryYear: result.date ? String(result.date.year) : '',
       });
+
       setExtracted({
         itemType: result.itemType,
-        expiry: new Date(result.year, result.month - 1, result.day),
+        expiry: result.date
+          ? new Date(result.date.year, result.date.month - 1, result.date.day)
+          : null,
       });
       setPhotoStatus('done');
-    } catch {
+    } catch (err) {
+      console.error('OCR failed:', err);
       setPhotoStatus('error');
     }
   };
 
   const handleContinueAfterPhoto = () => {
-    navigate('/contact');
+    // If only the date was extracted, hop to the select-item step so the
+    // user can pick the document type; otherwise jump straight to email.
+    if (extracted?.itemType) {
+      navigate('/contact');
+    } else {
+      navigate('/select-item');
+    }
   };
 
   return (
@@ -151,7 +154,9 @@ export function Start() {
           {photoStatus !== 'done' && (
             <>
               <label htmlFor="document-photo" className="app-photo-button">
-                {photoStatus === 'reading' ? 'Reading your document…' : 'Choose a photo'}
+                {photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing'
+                  ? 'Reading your document…'
+                  : 'Choose a photo'}
               </label>
               <input
                 ref={fileInputRef}
@@ -162,17 +167,20 @@ export function Start() {
                 capture="environment"
                 className="govbb-visually-hidden"
                 onChange={handlePhoto}
-                disabled={photoStatus === 'reading'}
+                disabled={photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing'}
               />
             </>
           )}
 
           <p className="app-photo-status" role="status" aria-live="polite">
-            {photoStatus === 'reading' && (
-              <>Reading <strong>{photoFileName}</strong>…</>
+            {(photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing') && (
+              <>{statusMessage(photoStatus, photoFileName)}</>
             )}
             {photoStatus === 'error' && (
-              <>We could not read your document. Please try a clearer photo, or use the manual steps.</>
+              <>
+                We could not read your document. Please try a clearer photo, or use{' '}
+                <strong>Start now</strong> to enter the details manually.
+              </>
             )}
           </p>
 
@@ -184,11 +192,19 @@ export function Start() {
               <dl className="app-photo-result__list">
                 <div className="app-photo-result__row">
                   <dt>Document type</dt>
-                  <dd>{ITEM_LABELS[extracted.itemType]}</dd>
+                  <dd>
+                    {extracted.itemType
+                      ? ITEM_LABELS[extracted.itemType]
+                      : <em>Not detected — you'll pick it on the next step</em>}
+                  </dd>
                 </div>
                 <div className="app-photo-result__row">
                   <dt>Expiry date</dt>
-                  <dd>{formatLongDate(extracted.expiry)}</dd>
+                  <dd>
+                    {extracted.expiry
+                      ? formatLongDate(extracted.expiry)
+                      : <em>Not detected — you'll enter it on the next step</em>}
+                  </dd>
                 </div>
               </dl>
               <p className="govbb-hint">
