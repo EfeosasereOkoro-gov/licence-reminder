@@ -264,6 +264,10 @@
   border-radius: var(--radius-sm);
   padding: var(--spacing-xm);
   background: var(--color-background);
+  /* Long, unbroken filenames inside <strong> elements would otherwise
+     force the panel wider than the viewport on mobile. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .app-photo-result {
