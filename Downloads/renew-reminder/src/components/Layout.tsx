@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+const ASSET = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+
 interface LayoutProps {
   children: ReactNode;
 }
@@ -13,7 +15,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="govbb-official-banner__inner">
               <span className="govbb-official-banner__crest" aria-hidden="true">
                 <img
-                  src="/assets/images/govbb-creast.svg"
+                  src={ASSET('assets/images/govbb-creast.svg')}
                   alt=""
                   className="govbb-official-banner__icon"
                   style={{ filter: 'brightness(0) invert(1)' }}
@@ -30,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="govbb-container">
             <div className="govbb-header__inner">
               <a href="https://www.gov.bb" aria-label="Government of Barbados home">
-                <img src="/assets/images/govbb-logo.svg" alt="Government of Barbados" className="govbb-header__logo" />
+                <img src={ASSET('assets/images/govbb-logo.svg')} alt="Government of Barbados" className="govbb-header__logo" />
               </a>
             </div>
           </div>
@@ -66,7 +68,7 @@ export function Layout({ children }: LayoutProps) {
             <hr className="govbb-footer__divider" />
             <div className="govbb-footer__end">
               <img
-                src="/assets/images/govbb-creast.svg"
+                src={ASSET('assets/images/govbb-creast.svg')}
                 alt=""
                 aria-hidden="true"
                 className="govbb-footer__coat app-footer-crest"
