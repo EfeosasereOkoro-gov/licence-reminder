@@ -149,15 +149,9 @@ function EmailCard({ sendDate, offset, expiry, contact, itemLabel, reminderId }:
           <strong>{formatLongDate(expiry)}</strong>.
         </p>
         <p>
-          {offset === 90 && 'You have about 3 months to renew it. Most renewals can be done online or in person at any government service centre.'}
+          {offset === 90 && 'You have about 3 months to renew it.'}
           {offset === 30 && 'You have about a month left. If you haven\'t already, please renew it soon to avoid any disruption.'}
           {offset === 7 && 'This is your final reminder — your document expires in one week. Please renew it now.'}
-        </p>
-
-        <p>
-          <a href="https://www.gov.bb" className="email-card__cta">
-            Renew now on gov.bb
-          </a>
         </p>
 
         <hr className="email-card__divider" />

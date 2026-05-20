@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
@@ -8,6 +8,15 @@ export function NotificationMethod() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
   usePageTitle('How should we remind you?', errors.length > 0);
+
+  // SMS is temporarily unavailable. If state was carried over from a
+  // previous reminder where the user picked SMS, clear it so the form
+  // does not auto-submit through to the (now phone-less) Contact step.
+  useEffect(() => {
+    if (answers.channel === 'sms') {
+      setAnswers({ channel: null });
+    }
+  }, [answers.channel, setAnswers]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -62,12 +71,15 @@ export function NotificationMethod() {
                 type="radio"
                 className="govbb-radio"
                 value="sms"
-                checked={answers.channel === 'sms'}
-                aria-invalid={!!radioError}
-                onChange={() => setAnswers({ channel: 'sms' })}
+                checked={false}
+                disabled
+                aria-describedby="channel-sms-hint"
               />
               <label className="govbb-radio-item__label" htmlFor="channel-sms">
                 Text message (SMS)
+                <span className="govbb-hint" id="channel-sms-hint" style={{ display: 'block' }}>
+                  Not available yet — coming soon
+                </span>
               </label>
             </div>
           </div>
