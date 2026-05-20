@@ -74,11 +74,12 @@ export function Confirmation() {
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
       <div className="app-prose">
         <p>
-          You don't need to do anything else. We'll send each reminder automatically.
+          Tap <strong>Add to Google Calendar</strong> above to save the event to
+          your account. Google Calendar will let you know when the date is close.
         </p>
         <p>
-          We'll delete your reminder details 30 days after the expiry date, in line with
-          our <a className="govbb-link" href="#/privacy">privacy notice</a>.
+          We do not keep a copy of your reminder. Read our{' '}
+          <a className="govbb-link" href="#/privacy">privacy notice</a>.
         </p>
       </div>
 
