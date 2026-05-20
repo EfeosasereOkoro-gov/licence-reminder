@@ -512,20 +512,18 @@ export function Start() {
         </ul>
       </div>
 
-      <details className="govbb-show-hide">
-        <summary className="govbb-show-hide__summary">What we ask for</summary>
-        <div className="govbb-show-hide__content app-prose">
-          <p>
-            To set up a reminder we only ask for the type of document, its
-            expiry date, and your email address.
-          </p>
-          <p>
-            We do not ask for your name, address, date of birth, or any
-            document numbers. Read our{' '}
-            <a className="govbb-link" href="#/privacy">privacy notice</a>.
-          </p>
-        </div>
-      </details>
+      <h2 className="govbb-text-h3">What we ask for</h2>
+      <div className="app-prose">
+        <p>
+          To set up a reminder we only ask for the type of document, its
+          expiry date, and your email address.
+        </p>
+        <p>
+          We do not ask for your name, address, date of birth, or any
+          document numbers. Read our{' '}
+          <a className="govbb-link" href="#/privacy">privacy notice</a>.
+        </p>
+      </div>
     </div>
   );
 }
