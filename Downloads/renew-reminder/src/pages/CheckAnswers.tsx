@@ -102,9 +102,9 @@ export function CheckAnswers() {
       <h2 className="govbb-text-h3 app-mt-m app-mb-xs">Now set your reminder</h2>
       <div className="app-prose app-mb-xm">
         <p>
-          By selecting "Set reminder" you agree we can send you reminder messages and
-          store the minimum data needed to do so. We will delete it 30 days after the
-          expiry date.
+          Selecting <strong>Set reminder</strong> will show you a button to add
+          this event to your Google Calendar. We do not send any reminder
+          messages or keep a copy of your details.
         </p>
       </div>
 

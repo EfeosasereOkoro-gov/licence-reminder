@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { MessagePreview } from '../components/MessagePreview';
+import { useEffect, useRef } from 'react';
+import { googleCalendarURL, outlookCalendarURL } from '../ics';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -14,10 +14,9 @@ function formatLongDate(d: Date): string {
 }
 
 export function Confirmation() {
-  const { answers, lastReminder, resetAnswers } = useJourney();
+  const { lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  usePageTitle('Your reminder has been set');
+  usePageTitle('Your reminder is ready');
 
   useEffect(() => {
     if (!lastReminder) {
@@ -30,9 +29,6 @@ export function Confirmation() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
-  const reminders = lastReminder.reminderDates.map(d => new Date(d));
-  const offsets = [90, 30, 7];
-  const contact = lastReminder.channel === 'email' ? answers.email : answers.phone;
 
   const handleStartAnother = () => {
     // Carry the notification channel and contact field forward so a returning
@@ -45,45 +41,56 @@ export function Confirmation() {
     <>
       <section className="app-success" aria-labelledby="confirmation-title">
         <h1 id="confirmation-title" ref={titleRef} tabIndex={-1} className="app-success__title">
-          Your reminder has been set
+          Your reminder is ready
         </h1>
         <p className="app-success__body">
-          We will notify you by {lastReminder.channel === 'email' ? 'email' : 'text message'} before
-          your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
+          Your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
+          Save it to your calendar below.
         </p>
       </section>
 
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">When you'll be reminded</h2>
-      <ul className="app-schedule">
-        {reminders.map((d, i) => (
-          <li className="app-schedule__item" key={d.toISOString()}>
-            <span className="app-schedule__date">{formatLongDate(d)}</span>
-            <span className="app-schedule__note">{offsets[i]} days before expiry</span>
-          </li>
-        ))}
-      </ul>
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to your calendar</h2>
+      <div className="app-prose">
+        <p>
+          Open this reminder in your calendar. The event will be pre-filled
+          with the expiry date — review it and save it to your account.
+        </p>
+      </div>
+      <div className="govbb-btn-group app-mt-s">
+        <a
+          className="govbb-btn"
+          href={googleCalendarURL(lastReminder)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Add to Google Calendar
+        </a>
+        <a
+          className="govbb-btn--secondary"
+          href={outlookCalendarURL(lastReminder)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Add to Microsoft Outlook
+        </a>
+      </div>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
       <div className="app-prose">
         <p>
-          You don't need to do anything else. We'll send each reminder automatically.
+          Tap one of the buttons above to save the event to your Google Calendar
+          or Microsoft Outlook account. Your calendar will let you know when the
+          date is close.
         </p>
         <p>
-          We'll delete your reminder details 30 days after the expiry date, in line with
-          our <a className="govbb-link" href="#/privacy">privacy notice</a>.
+          We do not keep a copy of your reminder. Read our{' '}
+          <a className="govbb-link" href="#/privacy">privacy notice</a>.
         </p>
       </div>
 
       <div className="govbb-btn-group app-mt-m">
         <button type="button" className="govbb-btn--tertiary" onClick={handleStartAnother}>
           Set another reminder
-        </button>
-        <button
-          type="button"
-          className="govbb-btn--secondary"
-          onClick={() => setPreviewOpen(true)}
-        >
-          Preview the reminder {lastReminder.channel === 'email' ? 'emails' : 'text messages'}
         </button>
       </div>
 
@@ -98,13 +105,6 @@ export function Confirmation() {
         </a>
         {' '}(takes 30 seconds)
       </p>
-
-      <MessagePreview
-        open={previewOpen}
-        reminder={lastReminder}
-        contact={contact}
-        onClose={() => setPreviewOpen(false)}
-      />
     </>
   );
 }
