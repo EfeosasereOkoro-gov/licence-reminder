@@ -202,7 +202,7 @@ export function Start() {
       expiryMonth: String(extracted.expiry.getMonth() + 1),
       expiryYear: String(extracted.expiry.getFullYear()),
     });
-    navigate('/contact');
+    navigate('/check-answers');
   };
 
   return (
@@ -508,15 +508,14 @@ export function Start() {
         <p>You will need:</p>
         <ul>
           <li>the expiry date shown on your document (or a clear photo of it)</li>
-          <li>an email address</li>
         </ul>
       </div>
 
       <h2 className="govbb-text-h3">What we ask for</h2>
       <div className="app-prose">
         <p>
-          To set up a reminder we only ask for the type of document, its
-          expiry date, and your email address.
+          To set up a reminder we only ask for the type of document and its
+          expiry date.
         </p>
         <p>
           We do not ask for your name, address, date of birth, or any

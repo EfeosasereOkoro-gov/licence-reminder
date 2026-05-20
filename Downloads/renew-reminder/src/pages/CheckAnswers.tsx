@@ -28,8 +28,7 @@ export function CheckAnswers() {
       !answers.itemType ||
       !answers.expiryDay ||
       !answers.expiryMonth ||
-      !answers.expiryYear ||
-      !answers.email
+      !answers.expiryYear
     ) {
       navigate('/');
     }
@@ -88,15 +87,6 @@ export function CheckAnswers() {
           </dd>
         </div>
 
-        <div className="app-summary-row">
-          <dt className="app-summary-row__key">Email address</dt>
-          <dd className="app-summary-row__value">{answers.email}</dd>
-          <dd className="app-summary-row__action">
-            <a className="govbb-link" href="#/contact">
-              Change<span className="govbb-visually-hidden"> email address</span>
-            </a>
-          </dd>
-        </div>
       </dl>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-xs">Now set your reminder</h2>
@@ -109,7 +99,7 @@ export function CheckAnswers() {
       </div>
 
       <div className="govbb-btn-group">
-        <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/contact')}>
+        <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/expiry-date')}>
           Previous
         </button>
         <button type="button" className="govbb-btn" onClick={handleConfirm}>

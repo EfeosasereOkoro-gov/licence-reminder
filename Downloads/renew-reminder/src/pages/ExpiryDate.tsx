@@ -45,7 +45,7 @@ export function ExpiryDate() {
 
     setErrors(next);
     if (next.length === 0) {
-      navigate('/contact');
+      navigate('/check-answers');
     }
   };
 
@@ -58,7 +58,7 @@ export function ExpiryDate() {
       <form onSubmit={handleSubmit} noValidate className="app-stack-xm">
         <fieldset className="govbb-fieldset" role="group" aria-describedby={dateError ? 'expiry-error' : 'expiry-hint'}>
           <legend className="govbb-fieldset__legend">
-            <span className="app-caption">Step 2 of 3</span>
+            <span className="app-caption">Step 2 of 2</span>
             <h1 className="govbb-text-h2 app-mb-xs">When does it expire?</h1>
           </legend>
           <p className="govbb-hint" id="expiry-hint">

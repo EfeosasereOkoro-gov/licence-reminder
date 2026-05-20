@@ -12,7 +12,6 @@ import type { Answers, StoredReminder } from './types';
 import { Start } from './pages/Start';
 import { SelectItem } from './pages/SelectItem';
 import { ExpiryDate } from './pages/ExpiryDate';
-import { Contact } from './pages/Contact';
 import { CheckAnswers } from './pages/CheckAnswers';
 import { Confirmation } from './pages/Confirmation';
 import { Privacy } from './pages/Privacy';
@@ -50,7 +49,6 @@ export default function App() {
       case '/': return <Start />;
       case '/select-item': return <SelectItem />;
       case '/expiry-date': return <ExpiryDate />;
-      case '/contact': return <Contact />;
       case '/check-answers': return <CheckAnswers />;
       case '/confirmation': return <Confirmation />;
       case '/privacy': return <Privacy />;

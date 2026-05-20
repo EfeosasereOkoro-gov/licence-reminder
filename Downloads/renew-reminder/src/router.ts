@@ -4,7 +4,6 @@ export type Route =
   | '/'
   | '/select-item'
   | '/expiry-date'
-  | '/contact'
   | '/check-answers'
   | '/confirmation'
   | '/privacy'
@@ -14,7 +13,6 @@ const ROUTES: Route[] = [
   '/',
   '/select-item',
   '/expiry-date',
-  '/contact',
   '/check-answers',
   '/confirmation',
   '/privacy',

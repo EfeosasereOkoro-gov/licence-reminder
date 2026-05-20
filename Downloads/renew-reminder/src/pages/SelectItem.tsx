@@ -38,7 +38,7 @@ export function SelectItem() {
       <form onSubmit={handleSubmit} noValidate className="app-stack-xm">
         <fieldset className="govbb-fieldset">
           <legend className="govbb-fieldset__legend">
-            <span className="app-caption">Step 1 of 3</span>
+            <span className="app-caption">Step 1 of 2</span>
             <h1 className="govbb-text-h2 app-mb-xs">What do you want a reminder for?</h1>
           </legend>
           <p className="govbb-hint">Choose one option.</p>

@@ -79,8 +79,8 @@ export function Confirmation() {
       <div className="app-prose">
         <p>
           Tap one of the buttons above to save the event to your Google Calendar
-          or Microsoft Outlook account. Your calendar will let you know when the
-          date is close.
+          or Microsoft Outlook account. Add reminders inside your calendar app to
+          be notified in advance.
         </p>
         <p>
           We do not keep a copy of your reminder. Read our{' '}
