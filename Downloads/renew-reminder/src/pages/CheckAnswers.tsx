@@ -29,15 +29,13 @@ export function CheckAnswers() {
       !answers.expiryDay ||
       !answers.expiryMonth ||
       !answers.expiryYear ||
-      !answers.channel ||
-      (answers.channel === 'email' && !answers.email) ||
-      (answers.channel === 'sms' && !answers.phone)
+      !answers.email
     ) {
       navigate('/');
     }
   }, [answers]);
 
-  if (!answers.itemType || !answers.channel) return null;
+  if (!answers.itemType) return null;
 
   const itemLabel =
     answers.itemType === 'custom'
@@ -50,8 +48,6 @@ export function CheckAnswers() {
     Number(answers.expiryDay),
   );
 
-  const contact = answers.channel === 'email' ? answers.email : answers.phone;
-
   const handleConfirm = () => {
     const reminderDates = computeReminderDates(expiry);
     const retainUntil = computeRetainUntil(expiry);
@@ -59,7 +55,7 @@ export function CheckAnswers() {
       id: generateReminderId(),
       itemLabel,
       expiryISO: expiry.toISOString(),
-      channel: answers.channel!,
+      channel: 'email',
       reminderDates: reminderDates.map(d => d.toISOString()),
       createdAtISO: new Date().toISOString(),
       retainUntilISO: retainUntil.toISOString(),
@@ -93,25 +89,11 @@ export function CheckAnswers() {
         </div>
 
         <div className="app-summary-row">
-          <dt className="app-summary-row__key">Reminder method</dt>
-          <dd className="app-summary-row__value">
-            {answers.channel === 'email' ? 'Email' : 'Text message (SMS)'}
-          </dd>
-          <dd className="app-summary-row__action">
-            <a className="govbb-link" href="#/notification-method">
-              Change<span className="govbb-visually-hidden"> reminder method</span>
-            </a>
-          </dd>
-        </div>
-
-        <div className="app-summary-row">
-          <dt className="app-summary-row__key">
-            {answers.channel === 'email' ? 'Email address' : 'Mobile number'}
-          </dt>
-          <dd className="app-summary-row__value">{contact}</dd>
+          <dt className="app-summary-row__key">Email address</dt>
+          <dd className="app-summary-row__value">{answers.email}</dd>
           <dd className="app-summary-row__action">
             <a className="govbb-link" href="#/contact">
-              Change<span className="govbb-visually-hidden"> contact details</span>
+              Change<span className="govbb-visually-hidden"> email address</span>
             </a>
           </dd>
         </div>

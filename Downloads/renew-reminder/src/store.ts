@@ -7,7 +7,10 @@ export const EMPTY_ANSWERS: Answers = {
   expiryDay: '',
   expiryMonth: '',
   expiryYear: '',
-  channel: null,
+  // Email is the only supported channel today — SMS will return once we
+  // wire up a provider. Defaulting here so the journey is always valid
+  // even though there's no longer a step that lets the user pick.
+  channel: 'email',
   email: '',
   phone: '',
 };
