@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessagePreview } from '../components/MessagePreview';
-import { downloadReminderICS } from '../ics';
+import { googleCalendarURL } from '../ics';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -64,23 +64,23 @@ export function Confirmation() {
         ))}
       </ul>
 
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to your calendar</h2>
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to Google Calendar</h2>
       <div className="app-prose">
         <p>
-          You can also add this reminder to your own calendar. We'll generate a
-          standard calendar file with the expiry date and the three reminder
-          alarms (90, 30, and 7 days before). It works with Apple Calendar,
-          Outlook, and Google Calendar.
+          Open this reminder in Google Calendar. The event will be pre-filled
+          with the expiry date — review it and tap Save in Google Calendar to
+          add it to your account.
         </p>
       </div>
       <div className="govbb-btn-group app-mt-s">
-        <button
-          type="button"
+        <a
           className="govbb-btn"
-          onClick={() => downloadReminderICS(lastReminder)}
+          href={googleCalendarURL(lastReminder)}
+          target="_blank"
+          rel="noopener noreferrer"
         >
-          Add to your calendar
-        </button>
+          Add to Google Calendar
+        </a>
       </div>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
