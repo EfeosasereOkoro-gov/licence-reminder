@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { extractDocument, prewarmExtractor, type ExtractProgress } from '../extractDocument';
+import { extractDocument, prewarmExtractor } from '../extractDocument';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -33,7 +33,6 @@ export function Start() {
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
   const [photoFileName, setPhotoFileName] = useState<string>('');
-  const [progress, setProgress] = useState<ExtractProgress>({ message: '', progress: 0 });
   const [extracted, setExtracted] = useState<Extracted | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,9 +54,7 @@ export function Start() {
   // downloads in the background while the user reads the disclaimer.
   useEffect(() => {
     if (!photoOpen) return;
-    let cancelled = false;
-    prewarmExtractor(p => { if (!cancelled) setProgress(p); }).catch(() => {});
-    return () => { cancelled = true; };
+    prewarmExtractor().catch(() => {});
   }, [photoOpen]);
 
   const handleStartManual = () => {
@@ -92,40 +89,53 @@ export function Start() {
     setPhotoFileName(file.name);
     setPhotoStatus('working');
 
-    try {
-      const result = await extractDocument(file, setProgress);
+    // Speed budget: if OCR doesn't return useful data inside 2.5 seconds,
+    // we move on without it. The Yes/No verification screen makes this
+    // safe — the user can fill in or correct any field.
+    const TIMEOUT_MS = 2500;
+    const TIMEOUT = Symbol('timeout');
 
-      if (!result.date && !result.itemType) {
-        setPhotoStatus('error');
-        return;
-      }
-
-      const ex: Extracted = {
-        itemType: result.itemType,
-        expiry: result.date
-          ? new Date(result.date.year, result.date.month - 1, result.date.day)
-          : null,
-      };
-      setExtracted(ex);
-
-      // Pre-fill the edit-form fields so "No" jumps to the OCR'd value
-      // rather than an empty form — the user usually only needs a tweak.
-      setEditType(ex.itemType ?? '');
-      if (ex.expiry) {
-        setEditDay(String(ex.expiry.getDate()));
-        setEditMonth(String(ex.expiry.getMonth() + 1));
-        setEditYear(String(ex.expiry.getFullYear()));
-      }
-
-      // If OCR couldn't read one field, drop straight into editing mode
-      // for it — there's no value to confirm.
-      setTypeVerdict(ex.itemType ? 'pending' : 'editing');
-
-      setPhotoStatus('verifying');
-    } catch (err) {
+    const ocr = extractDocument(file).catch(err => {
       console.error('OCR failed:', err);
-      setPhotoStatus('error');
+      return null;
+    });
+
+    const timeout = new Promise<typeof TIMEOUT>(resolve =>
+      setTimeout(() => resolve(TIMEOUT), TIMEOUT_MS),
+    );
+
+    const winner = await Promise.race([ocr, timeout]);
+
+    const result = winner === TIMEOUT ? null : winner;
+    const ex: Extracted = {
+      itemType: result?.itemType ?? null,
+      expiry: result?.date
+        ? new Date(result.date.year, result.date.month - 1, result.date.day)
+        : null,
+    };
+
+    setExtracted(ex);
+
+    // Pre-fill the edit-form fields so "No" jumps to the OCR'd value
+    // (when we have one) rather than an empty form.
+    setEditType(ex.itemType ?? '');
+    if (ex.expiry) {
+      setEditDay(String(ex.expiry.getDate()));
+      setEditMonth(String(ex.expiry.getMonth() + 1));
+      setEditYear(String(ex.expiry.getFullYear()));
     }
+
+    // If OCR didn't read the type (timeout or genuine no-match), drop
+    // straight into editing mode for it — there's nothing to confirm.
+    setTypeVerdict(ex.itemType ? 'pending' : 'editing');
+
+    setPhotoStatus('verifying');
+
+    // Note: the ocr promise may still be running in the background.
+    // We deliberately ignore its eventual result — the user is already
+    // on the verification screen and changing values under them would
+    // be jarring.
+    void ocr;
   };
 
   // ── Confirm / edit the document type ──────────────────────────────────
@@ -258,21 +268,9 @@ export function Start() {
           )}
 
           {photoStatus === 'working' && (
-            <div className="app-photo-progress" role="status" aria-live="polite">
-              <p className="app-photo-progress__label">{progress.message}</p>
-              <div
-                className="app-photo-progress__track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(progress.progress * 100)}
-              >
-                <div
-                  className="app-photo-progress__bar"
-                  style={{ width: `${Math.max(2, progress.progress * 100)}%` }}
-                />
-              </div>
-            </div>
+            <p className="app-photo-status" role="status" aria-live="polite">
+              Reading <strong>{photoFileName}</strong>…
+            </p>
           )}
 
           {photoStatus === 'error' && (

@@ -44,7 +44,7 @@ export function prewarmExtractor(
   return workerPromise;
 }
 
-async function shrinkForOCR(file: File, maxDim = 1280): Promise<Blob> {
+async function shrinkForOCR(file: File, maxDim = 640): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const longest = Math.max(bitmap.width, bitmap.height);
   if (longest <= maxDim) return file;
