@@ -8,6 +8,7 @@ import {
   useJourney,
 } from '../store';
 import { ITEM_LABELS } from '../types';
+import { usePageTitle } from '../usePageTitle';
 
 function formatLongDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -20,6 +21,7 @@ function formatLongDate(d: Date): string {
 
 export function CheckAnswers() {
   const { answers, saveReminder } = useJourney();
+  usePageTitle('Check your answers');
 
   useEffect(() => {
     // Guard against landing here without enough data.

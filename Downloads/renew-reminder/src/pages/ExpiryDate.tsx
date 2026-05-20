@@ -3,6 +3,7 @@ import { BackLink } from '../components/BackLink';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
+import { usePageTitle } from '../usePageTitle';
 
 function isValidDate(day: number, month: number, year: number): boolean {
   const d = new Date(year, month - 1, day);
@@ -16,6 +17,7 @@ function isValidDate(day: number, month: number, year: number): boolean {
 export function ExpiryDate() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
+  usePageTitle('When does it expire?', errors.length > 0);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

@@ -4,12 +4,14 @@ import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { ITEM_HINTS, ITEM_LABELS, type ItemKey } from '../types';
+import { usePageTitle } from '../usePageTitle';
 
 const ITEMS: ItemKey[] = ['drivers-licence', 'vehicle-registration', 'passport', 'permit', 'custom'];
 
 export function SelectItem() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
+  usePageTitle('What do you want a reminder for?', errors.length > 0);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

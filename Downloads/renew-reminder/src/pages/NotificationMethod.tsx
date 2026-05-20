@@ -3,10 +3,12 @@ import { BackLink } from '../components/BackLink';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
+import { usePageTitle } from '../usePageTitle';
 
 export function NotificationMethod() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
+  usePageTitle('How should we remind you?', errors.length > 0);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

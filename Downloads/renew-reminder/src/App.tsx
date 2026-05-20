@@ -28,8 +28,12 @@ export default function App() {
     setAnswersState(prev => ({ ...prev, ...next }));
   }, []);
 
-  const resetAnswers = useCallback(() => {
-    setAnswersState(EMPTY_ANSWERS);
+  const resetAnswers = useCallback((options?: { keepContact?: boolean }) => {
+    setAnswersState(prev =>
+      options?.keepContact
+        ? { ...EMPTY_ANSWERS, channel: prev.channel, email: prev.email, phone: prev.phone }
+        : EMPTY_ANSWERS,
+    );
   }, []);
 
   const saveReminder = useCallback((r: StoredReminder) => {

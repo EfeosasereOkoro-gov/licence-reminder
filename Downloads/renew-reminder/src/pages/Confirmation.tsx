@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MessagePreview } from '../components/MessagePreview';
 import { navigate } from '../router';
 import { useJourney } from '../store';
+import { usePageTitle } from '../usePageTitle';
 
 function formatLongDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -16,6 +17,7 @@ export function Confirmation() {
   const { answers, lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  usePageTitle('Your reminder has been set');
 
   useEffect(() => {
     if (!lastReminder) {
@@ -33,8 +35,10 @@ export function Confirmation() {
   const contact = lastReminder.channel === 'email' ? answers.email : answers.phone;
 
   const handleStartAnother = () => {
-    resetAnswers();
-    navigate('/');
+    // Carry the notification channel and contact field forward so a returning
+    // user doesn't re-enter their email or phone to set a second reminder.
+    resetAnswers({ keepContact: true });
+    navigate('/select-item');
   };
 
   return (

@@ -1,6 +1,8 @@
 import { BackLink } from '../components/BackLink';
+import { usePageTitle } from '../usePageTitle';
 
 export function Accessibility() {
+  usePageTitle('Accessibility statement');
   return (
     <>
       <BackLink to="/" />

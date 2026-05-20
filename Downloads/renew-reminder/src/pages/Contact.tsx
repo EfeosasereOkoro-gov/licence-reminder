@@ -3,6 +3,7 @@ import { BackLink } from '../components/BackLink';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
+import { usePageTitle } from '../usePageTitle';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Accept local Bajan formats and international with +.
@@ -11,6 +12,9 @@ const PHONE_RE = /^\+?[0-9]{7,15}$/;
 export function Contact() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
+  const title =
+    answers.channel === 'sms' ? "What's your mobile number?" : "What's your email address?";
+  usePageTitle(title, errors.length > 0);
 
   useEffect(() => {
     if (!answers.channel) {

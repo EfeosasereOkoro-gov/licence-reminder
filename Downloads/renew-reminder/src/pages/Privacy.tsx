@@ -1,6 +1,8 @@
 import { BackLink } from '../components/BackLink';
+import { usePageTitle } from '../usePageTitle';
 
 export function Privacy() {
+  usePageTitle('Privacy notice');
   return (
     <>
       <BackLink to="/" />

@@ -15,7 +15,15 @@ export const EMPTY_ANSWERS: Answers = {
 export interface JourneyContextValue {
   answers: Answers;
   setAnswers: (next: Partial<Answers>) => void;
-  resetAnswers: () => void;
+  /**
+   * Reset the in-memory journey.
+   *
+   * Pass `{ keepContact: true }` after a successful submission so the user
+   * can set another reminder without re-entering their email or phone —
+   * we wipe the item, expiry, and any submission state, but carry the
+   * notification channel and contact field forward.
+   */
+  resetAnswers: (options?: { keepContact?: boolean }) => void;
   saveReminder: (r: StoredReminder) => void;
   lastReminder: StoredReminder | null;
 }
