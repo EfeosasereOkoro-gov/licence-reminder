@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "Downloads/voicebox", "run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "Renew Reminder Dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "Downloads/renew-reminder", "run", "dev"],
+      "port": 3001
     }
   ]
 }

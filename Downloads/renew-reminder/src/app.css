@@ -1,0 +1,480 @@
+/* App-level extras layered on top of the GovBB design system. */
+
+/* Skip link — keep hidden until focused via keyboard. */
+.skip-link {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-s);
+  background: var(--color-yellow-100);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  outline: 4px solid var(--color-teal-100);
+  outline-offset: 0;
+}
+
+/* Service header — additional row below the GovBB yellow bar showing the service name. */
+.service-bar {
+  background: var(--color-white-00);
+  border-bottom: 1px solid var(--color-grey-00);
+  width: 100%;
+}
+
+.service-bar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-s);
+  padding-block: var(--spacing-s);
+  flex-wrap: wrap;
+}
+
+.service-bar__name {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-h4);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.service-bar__phase {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.service-bar__phase-tag {
+  display: inline-block;
+  background: var(--color-blue-100);
+  color: var(--color-white-00);
+  font-size: var(--font-size-caption-sm);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.service-bar__phase-text {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-muted);
+}
+
+/* Two-thirds main column on wide screens (GDS pattern). */
+.app-main {
+  padding-block: var(--spacing-m);
+}
+
+@media (min-width: 1024px) {
+  .app-main__col {
+    max-width: 41rem;
+  }
+}
+
+.app-stack-s > * + * { margin-top: var(--spacing-s); }
+.app-stack-xm > * + * { margin-top: var(--spacing-xm); }
+.app-stack-m > * + * { margin-top: var(--spacing-m); }
+
+/* Back link, top-left of each step. */
+.app-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-underline-offset: 2px;
+  text-decoration: underline;
+  color: var(--color-link);
+  margin-bottom: var(--spacing-m);
+}
+
+.app-back-link::before {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-top: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+}
+
+.app-back-link:hover {
+  background-color: var(--color-link-hover-bg);
+}
+
+.app-back-link:focus-visible {
+  outline: 4px solid var(--color-teal-100);
+  outline-offset: 2px;
+  background: var(--color-yellow-100);
+  color: var(--color-text);
+}
+
+/* Caption that sits above an H1, "Step n of N" pattern. */
+.app-caption {
+  display: block;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Inset text — used on confirmation page for important values. */
+.app-inset {
+  border-left: 8px solid var(--color-grey-00);
+  padding: var(--spacing-s) var(--spacing-xm);
+  background: transparent;
+}
+
+.app-inset__label {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.app-inset__value {
+  font-size: var(--font-size-h3);
+  line-height: var(--line-height-h3);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.025em;
+  margin: 0;
+}
+
+/* Success panel — green slab for the confirmation screen. */
+.app-success {
+  background: var(--color-green-00);
+  color: var(--color-white-00);
+  padding: var(--spacing-m) var(--spacing-xm);
+  border-radius: var(--radius-sm);
+}
+
+.app-success__title {
+  font-size: var(--font-size-h2);
+  line-height: var(--line-height-h2);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.app-success__body {
+  margin-top: var(--spacing-xs);
+}
+
+/* Summary list — used on the check-answers page. */
+.app-summary-list {
+  border-bottom: 1px solid var(--color-grey-00);
+}
+
+.app-summary-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xs);
+  padding-block: var(--spacing-s);
+  border-top: 1px solid var(--color-grey-00);
+}
+
+@media (min-width: 640px) {
+  .app-summary-row {
+    grid-template-columns: 12rem 1fr auto;
+    gap: var(--spacing-m);
+  }
+}
+
+.app-summary-row__key {
+  font-weight: var(--font-weight-bold);
+}
+
+.app-summary-row__value {
+  color: var(--color-text);
+}
+
+.app-summary-row__action {
+  text-align: left;
+}
+
+@media (min-width: 640px) {
+  .app-summary-row__action {
+    text-align: right;
+  }
+}
+
+/* Reminder schedule list (confirmation page). */
+.app-schedule {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--color-grey-00);
+}
+
+.app-schedule__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-block: var(--spacing-s);
+  border-bottom: 1px solid var(--color-grey-00);
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+}
+
+.app-schedule__date {
+  font-weight: var(--font-weight-bold);
+}
+
+.app-schedule__note {
+  color: var(--color-text-muted);
+}
+
+/* Spacing helpers. */
+.app-mt-0 { margin-top: 0; }
+.app-mt-xs { margin-top: var(--spacing-xs); }
+.app-mt-s  { margin-top: var(--spacing-s); }
+.app-mt-xm { margin-top: var(--spacing-xm); }
+.app-mt-m  { margin-top: var(--spacing-m); }
+.app-mt-l  { margin-top: var(--spacing-l); }
+
+.app-mb-0 { margin-bottom: 0; }
+.app-mb-xs { margin-bottom: var(--spacing-xs); }
+.app-mb-s  { margin-bottom: var(--spacing-s); }
+.app-mb-xm { margin-bottom: var(--spacing-xm); }
+.app-mb-m  { margin-bottom: var(--spacing-m); }
+.app-mb-l  { margin-bottom: var(--spacing-l); }
+
+.app-prose p { font-size: var(--font-size-body); line-height: var(--line-height-body); }
+.app-prose p + p { margin-top: var(--spacing-s); }
+.app-prose ul { font-size: var(--font-size-body); line-height: var(--line-height-body); padding-inline-start: var(--spacing-m); list-style: disc; }
+.app-prose ul li + li { margin-top: var(--spacing-xs); }
+
+/* Footer crest sizing override — the supplied crest svg is the full coat of arms. */
+.app-footer-crest {
+  height: 6rem;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+/* ── Message preview dialog ─────────────────────────────────────────────── */
+
+.message-preview {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 44rem;
+  width: calc(100% - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  inset: 0;
+}
+
+.message-preview::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.message-preview__inner {
+  background: var(--color-background);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 2rem);
+  overflow: hidden;
+}
+
+.message-preview__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-s);
+  padding: var(--spacing-xm);
+  border-bottom: 1px solid var(--color-grey-00);
+  flex-shrink: 0;
+}
+
+.message-preview__sub {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.message-preview__close {
+  background: var(--color-grey-00);
+  color: var(--color-text);
+  border: 0;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.message-preview__close:hover {
+  background: #b9c0c6;
+}
+
+.message-preview__close:focus-visible {
+  outline: 4px solid var(--color-teal-100);
+  outline-offset: 2px;
+}
+
+.message-preview__list {
+  padding: var(--spacing-xm);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.message-preview__footer {
+  padding: var(--spacing-s) var(--spacing-xm);
+  border-top: 1px solid var(--color-grey-00);
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+
+/* Email card. */
+.email-card {
+  border: 1px solid var(--color-grey-00);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.email-card__chrome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  align-items: center;
+  padding: 0.625rem var(--spacing-s);
+  background: #f7f8fa;
+  border-bottom: 1px solid var(--color-grey-00);
+}
+
+.email-card__pill {
+  display: inline-block;
+  background: var(--color-blue-100);
+  color: var(--color-white-00);
+  font-size: var(--font-size-caption-sm);
+  line-height: 1;
+  font-weight: var(--font-weight-bold);
+  padding: 0.375rem 0.625rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.email-card__pill--muted {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-grey-00);
+  font-weight: var(--font-weight-normal);
+}
+
+.email-card__meta {
+  margin: 0;
+  padding: var(--spacing-s) var(--spacing-s) 0.625rem;
+  border-bottom: 1px solid var(--color-grey-00);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.email-card__meta-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: var(--spacing-s);
+  padding-block: 0.25rem;
+}
+
+.email-card__meta-row dt {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+}
+
+.email-card__meta-row dd {
+  margin: 0;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.email-card__subject {
+  font-weight: var(--font-weight-bold);
+}
+
+.email-card__body {
+  padding: var(--spacing-s);
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+}
+
+.email-card__body > p + p { margin-top: var(--spacing-s); }
+
+.email-card__cta {
+  display: inline-block;
+  background: var(--color-teal-00);
+  color: var(--color-white-00);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  margin-top: var(--spacing-xs);
+}
+
+.email-card__divider {
+  border: 0;
+  border-top: 1px solid var(--color-grey-00);
+  margin-block: var(--spacing-s);
+}
+
+.email-card__small {
+  font-size: var(--font-size-caption-sm);
+  line-height: var(--line-height-caption-sm);
+  color: var(--color-text-muted);
+}
+
+.email-card__small + .email-card__small { margin-top: var(--spacing-xs); }
+
+/* SMS card — phone bubble. */
+.sms-card {
+  border: 1px solid var(--color-grey-00);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sms-card__phone {
+  padding: var(--spacing-m);
+  background: #f0f2f4;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-xs);
+}
+
+.sms-card__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-caption-sm);
+  color: var(--color-text-muted);
+}
+
+.sms-card__from { font-weight: var(--font-weight-bold); color: var(--color-text); }
+
+.sms-card__bubble {
+  background: var(--color-blue-100);
+  color: var(--color-white-00);
+  padding: 0.875rem 1rem;
+  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+  max-width: 28rem;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  align-self: flex-start;
+}
