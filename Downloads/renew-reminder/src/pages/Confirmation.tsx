@@ -16,7 +16,7 @@ function formatLongDate(d: Date): string {
 export function Confirmation() {
   const { lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  usePageTitle('Your reminder has been set');
+  usePageTitle('Your reminder is ready');
 
   useEffect(() => {
     if (!lastReminder) {
@@ -41,11 +41,11 @@ export function Confirmation() {
     <>
       <section className="app-success" aria-labelledby="confirmation-title">
         <h1 id="confirmation-title" ref={titleRef} tabIndex={-1} className="app-success__title">
-          Your reminder has been set
+          Your reminder is ready
         </h1>
         <p className="app-success__body">
-          We will notify you by {lastReminder.channel === 'email' ? 'email' : 'text message'} before
-          your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
+          Your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
+          Tap <strong>Add to Google Calendar</strong> below to save it.
         </p>
       </section>
 
