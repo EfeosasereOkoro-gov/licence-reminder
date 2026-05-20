@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
@@ -13,10 +13,39 @@ function isValidDate(day: number, month: number, year: number): boolean {
   );
 }
 
+/**
+ * Simulate reading an expiry date from a document photo.
+ *
+ * This is a front-end-only prototype. A future server-side implementation
+ * would run OCR on the image, locate the expiry-date field, return only
+ * that field, and discard the image without storing it. The disclaimer
+ * shown on the page describes that intended behaviour.
+ *
+ * For the prototype, we wait a moment and return a plausible date — far
+ * enough in the future that the date validation passes.
+ */
+function simulateExtractExpiryDate(): Promise<{ day: number; month: number; year: number }> {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      // 12–30 months in the future, so different demo runs vary a bit.
+      const monthsAhead = 12 + Math.floor(Math.random() * 18);
+      const d = new Date();
+      d.setMonth(d.getMonth() + monthsAhead);
+      resolve({ day: d.getDate(), month: d.getMonth() + 1, year: d.getFullYear() });
+    }, 1400);
+  });
+}
+
+type PhotoStatus = 'idle' | 'reading' | 'done' | 'error';
+
 export function ExpiryDate() {
   const { answers, setAnswers } = useJourney();
   const [errors, setErrors] = useState<ErrorItem[]>([]);
   usePageTitle('When does it expire?', errors.length > 0);
+
+  const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
+  const [photoFileName, setPhotoFileName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,6 +75,29 @@ export function ExpiryDate() {
     setErrors(next);
     if (next.length === 0) {
       navigate('/contact');
+    }
+  };
+
+  const handlePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset the input value so picking the same file again still fires
+    // onChange — useful if the user wants to retry.
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+
+    setPhotoFileName(file.name);
+    setPhotoStatus('reading');
+
+    try {
+      const { day, month, year } = await simulateExtractExpiryDate();
+      setAnswers({
+        expiryDay: String(day),
+        expiryMonth: String(month),
+        expiryYear: String(year),
+      });
+      setPhotoStatus('done');
+    } catch {
+      setPhotoStatus('error');
     }
   };
 
@@ -128,6 +180,59 @@ export function ExpiryDate() {
             </div>
           </div>
         </fieldset>
+
+        {/* Optional: read the expiry date from a photo of the document. */}
+        <details className="govbb-show-hide app-photo-extract">
+          <summary className="govbb-show-hide__summary">
+            Or use a photo of your document
+          </summary>
+          <div className="govbb-show-hide__content">
+            <div className="app-disclaimer" role="note" aria-labelledby="photo-disclaimer-title">
+              <p id="photo-disclaimer-title" className="app-disclaimer__title">
+                We will only read the expiry date
+              </p>
+              <p>
+                Your photo stays on this device. We do not upload, store, or share the
+                image. We only read the expiry date and fill it in for you. You can
+                check and change it before continuing.
+              </p>
+            </div>
+
+            <label htmlFor="expiry-photo" className="govbb-btn--secondary app-photo-button">
+              {photoStatus === 'reading' ? 'Reading your document…' : 'Choose a photo'}
+            </label>
+            <input
+              ref={fileInputRef}
+              id="expiry-photo"
+              name="expiry-photo"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="govbb-visually-hidden"
+              onChange={handlePhoto}
+              disabled={photoStatus === 'reading'}
+            />
+
+            <p
+              className="app-photo-status"
+              role="status"
+              aria-live="polite"
+            >
+              {photoStatus === 'reading' && (
+                <>Reading the expiry date from <strong>{photoFileName}</strong>…</>
+              )}
+              {photoStatus === 'done' && (
+                <>
+                  We read this expiry date from <strong>{photoFileName}</strong>. Please
+                  check it is correct before continuing.
+                </>
+              )}
+              {photoStatus === 'error' && (
+                <>We could not read an expiry date from that photo. Please enter it manually.</>
+              )}
+            </p>
+          </div>
+        </details>
 
         <div className="govbb-btn-group">
           <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/select-item')}>
