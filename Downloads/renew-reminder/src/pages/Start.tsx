@@ -1,5 +1,5 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { extractDocument, type ExtractProgress } from '../extractDocument';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { extractDocument, prewarmExtractor, type ExtractProgress } from '../extractDocument';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -14,20 +14,7 @@ function formatLongDate(d: Date): string {
   });
 }
 
-type PhotoStatus = 'idle' | 'loading' | 'reading' | 'parsing' | 'done' | 'error';
-
-function statusMessage(status: PhotoStatus, fileName: string): string {
-  switch (status) {
-    case 'loading':
-      return 'Getting the recognition engine ready — this only happens the first time.';
-    case 'reading':
-      return `Reading ${fileName}…`;
-    case 'parsing':
-      return 'Looking for the document type and expiry date…';
-    default:
-      return '';
-  }
-}
+type PhotoStatus = 'idle' | 'working' | 'done' | 'error';
 
 export function Start() {
   usePageTitle(null);
@@ -37,11 +24,22 @@ export function Start() {
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
   const [photoFileName, setPhotoFileName] = useState<string>('');
+  const [progress, setProgress] = useState<ExtractProgress>({ message: '', progress: 0 });
   const [extracted, setExtracted] = useState<{
     itemType: ItemKey | null;
     expiry: Date | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-warm the OCR engine the moment the user opens the photo panel,
+  // so the language data downloads in the background while they read
+  // the disclaimer. By the time they pick a photo the engine is hot.
+  useEffect(() => {
+    if (!photoOpen) return;
+    let cancelled = false;
+    prewarmExtractor(p => { if (!cancelled) setProgress(p); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [photoOpen]);
 
   const handleStartManual = () => {
     resetAnswers();
@@ -59,12 +57,10 @@ export function Start() {
 
     setPhotoFileName(file.name);
     setExtracted(null);
-    setPhotoStatus('loading');
+    setPhotoStatus('working');
 
     try {
-      const result = await extractDocument(file, (p: ExtractProgress) => {
-        setPhotoStatus(p.stage);
-      });
+      const result = await extractDocument(file, setProgress);
 
       // If we couldn't extract anything useful, ask the user to try
       // again or fall back to the manual path. The disclaimer promises
@@ -154,9 +150,7 @@ export function Start() {
           {photoStatus !== 'done' && (
             <>
               <label htmlFor="document-photo" className="app-photo-button">
-                {photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing'
-                  ? 'Reading your document…'
-                  : 'Choose a photo'}
+                {photoStatus === 'working' ? 'Reading your document…' : 'Choose a photo'}
               </label>
               <input
                 ref={fileInputRef}
@@ -167,22 +161,35 @@ export function Start() {
                 capture="environment"
                 className="govbb-visually-hidden"
                 onChange={handlePhoto}
-                disabled={photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing'}
+                disabled={photoStatus === 'working'}
               />
             </>
           )}
 
-          <p className="app-photo-status" role="status" aria-live="polite">
-            {(photoStatus === 'loading' || photoStatus === 'reading' || photoStatus === 'parsing') && (
-              <>{statusMessage(photoStatus, photoFileName)}</>
-            )}
-            {photoStatus === 'error' && (
-              <>
-                We could not read your document. Please try a clearer photo, or use{' '}
-                <strong>Start now</strong> to enter the details manually.
-              </>
-            )}
-          </p>
+          {photoStatus === 'working' && (
+            <div className="app-photo-progress" role="status" aria-live="polite">
+              <p className="app-photo-progress__label">{progress.message}</p>
+              <div
+                className="app-photo-progress__track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress.progress * 100)}
+              >
+                <div
+                  className="app-photo-progress__bar"
+                  style={{ width: `${Math.max(2, progress.progress * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {photoStatus === 'error' && (
+            <p className="app-photo-status" role="status" aria-live="polite">
+              We could not read your document. Please try a clearer photo, or use{' '}
+              <strong>Start now</strong> to enter the details manually.
+            </p>
+          )}
 
           {photoStatus === 'done' && extracted && (
             <div className="app-photo-result" aria-labelledby="photo-result-title">

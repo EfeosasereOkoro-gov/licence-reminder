@@ -377,6 +377,33 @@
   display: none;
 }
 
+.app-photo-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.app-photo-progress__label {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.app-photo-progress__track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-grey-00);
+  overflow: hidden;
+}
+
+.app-photo-progress__bar {
+  height: 100%;
+  background: var(--color-teal-00);
+  transition: width 0.25s ease;
+  border-radius: 999px;
+}
+
 /* ── Message preview dialog ─────────────────────────────────────────────── */
 
 .message-preview {
