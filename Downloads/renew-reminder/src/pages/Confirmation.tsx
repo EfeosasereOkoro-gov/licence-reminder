@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { MessagePreview } from '../components/MessagePreview';
+import { useEffect, useRef } from 'react';
 import { googleCalendarURL } from '../ics';
 import { navigate } from '../router';
 import { useJourney } from '../store';
@@ -15,9 +14,8 @@ function formatLongDate(d: Date): string {
 }
 
 export function Confirmation() {
-  const { answers, lastReminder, resetAnswers } = useJourney();
+  const { lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
   usePageTitle('Your reminder has been set');
 
   useEffect(() => {
@@ -31,7 +29,6 @@ export function Confirmation() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
-  const contact = lastReminder.channel === 'email' ? answers.email : answers.phone;
 
   const handleStartAnother = () => {
     // Carry the notification channel and contact field forward so a returning
@@ -87,13 +84,6 @@ export function Confirmation() {
         <button type="button" className="govbb-btn--tertiary" onClick={handleStartAnother}>
           Set another reminder
         </button>
-        <button
-          type="button"
-          className="govbb-btn--secondary"
-          onClick={() => setPreviewOpen(true)}
-        >
-          Preview the reminder {lastReminder.channel === 'email' ? 'emails' : 'text messages'}
-        </button>
       </div>
 
       <p className="app-mt-m">
@@ -107,13 +97,6 @@ export function Confirmation() {
         </a>
         {' '}(takes 30 seconds)
       </p>
-
-      <MessagePreview
-        open={previewOpen}
-        reminder={lastReminder}
-        contact={contact}
-        onClose={() => setPreviewOpen(false)}
-      />
     </>
   );
 }
