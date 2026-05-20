@@ -53,11 +53,6 @@ export function Confirmation() {
         </p>
       </section>
 
-      <div className="app-mt-m app-inset">
-        <p className="app-inset__label">Your reminder reference</p>
-        <p className="app-inset__value">{lastReminder.id}</p>
-      </div>
-
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">When you'll be reminded</h2>
       <ul className="app-schedule">
         {reminders.map((d, i) => (

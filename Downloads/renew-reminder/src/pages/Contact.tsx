@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { BackLink } from '../components/BackLink';
 import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import { useJourney } from '../store';
@@ -54,7 +53,6 @@ export function Contact() {
 
   return (
     <>
-      <BackLink to="/notification-method" />
       <ErrorSummary errors={errors} />
 
       <form onSubmit={handleSubmit} noValidate className="app-stack-xm">
@@ -117,6 +115,9 @@ export function Contact() {
         )}
 
         <div className="govbb-btn-group">
+          <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/notification-method')}>
+            Previous
+          </button>
           <button type="submit" className="govbb-btn">Continue</button>
         </div>
       </form>

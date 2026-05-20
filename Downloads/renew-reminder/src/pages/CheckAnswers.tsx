@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { BackLink } from '../components/BackLink';
 import { navigate } from '../router';
 import {
   computeRetainUntil,
@@ -70,7 +69,6 @@ export function CheckAnswers() {
 
   return (
     <>
-      <BackLink to="/contact" />
       <h1 className="govbb-text-h2 app-mb-xm">Check your answers</h1>
 
       <dl className="app-summary-list">
@@ -129,6 +127,9 @@ export function CheckAnswers() {
       </div>
 
       <div className="govbb-btn-group">
+        <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/contact')}>
+          Previous
+        </button>
         <button type="button" className="govbb-btn" onClick={handleConfirm}>
           Set reminder
         </button>
