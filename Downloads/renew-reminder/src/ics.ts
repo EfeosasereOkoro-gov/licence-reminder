@@ -98,22 +98,7 @@ export function googleCalendarURL(reminder: StoredReminder): string {
   const start = formatDateUTC(expiry);
   const end = formatDateUTC(addDays(expiry, 1));
 
-  const reminderDates = reminder.reminderDates.map(iso =>
-    new Date(iso).toLocaleDateString('en-GB', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    }),
-  );
-
-  const details = [
-    `Your ${reminder.itemLabel} expires today.`,
-    '',
-    'We recommend setting up reminders for these dates inside Google Calendar:',
-    `• 90 days before — ${reminderDates[0]}`,
-    `• 30 days before — ${reminderDates[1]}`,
-    `• 7 days before — ${reminderDates[2]}`,
-    '',
-    `Reference: ${reminder.id}`,
-  ].join('\n');
+  const details = buildEventDescription(reminder);
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
@@ -125,6 +110,61 @@ export function googleCalendarURL(reminder: StoredReminder): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+/**
+ * Build an Outlook "create event" deep-link that opens the Outlook
+ * Web compose view with everything pre-filled.
+ *
+ * Same caveat as Google: a single deep-link can only carry the event
+ * itself, not multiple reminder notifications — Outlook has its own
+ * reminder system. The event description lists the three reminder
+ * dates so the user can add native Outlook reminders manually.
+ *
+ * Uses outlook.live.com (personal accounts). Microsoft 365 / business
+ * accounts redirect to outlook.office.com automatically.
+ */
+export function outlookCalendarURL(reminder: StoredReminder): string {
+  const expiry = new Date(reminder.expiryISO);
+  const expiryEnd = addDays(expiry, 1);
+
+  // Outlook accepts ISO-8601 date-only for all-day events.
+  const startdt = formatDateOnly(expiry);
+  const enddt = formatDateOnly(expiryEnd);
+
+  const body = buildEventDescription(reminder);
+
+  const params = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: `${reminder.itemLabel} expires`,
+    body,
+    startdt,
+    enddt,
+    allday: 'true',
+  });
+
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+}
+
+/** Shared event-description body used by every "open in X" link. */
+function buildEventDescription(reminder: StoredReminder): string {
+  const reminderDates = reminder.reminderDates.map(iso =>
+    new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }),
+  );
+
+  return [
+    `Your ${reminder.itemLabel} expires today.`,
+    '',
+    'We recommend setting up reminders for these dates inside your calendar:',
+    `• 90 days before — ${reminderDates[0]}`,
+    `• 30 days before — ${reminderDates[1]}`,
+    `• 7 days before — ${reminderDates[2]}`,
+    '',
+    `Reference: ${reminder.id}`,
+  ].join('\n');
+}
+
 // ─── helpers ─────────────────────────────────────────────────────────────
 
 function pad(n: number): string {
@@ -134,6 +174,11 @@ function pad(n: number): string {
 /** YYYYMMDD in UTC — used for all-day DTSTART/DTEND. */
 function formatDateUTC(d: Date): string {
   return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}`;
+}
+
+/** YYYY-MM-DD in UTC — Outlook's all-day deep-link date format. */
+function formatDateOnly(d: Date): string {
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }
 
 /** YYYYMMDDTHHMMSSZ — used for DTSTAMP. */

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { googleCalendarURL } from '../ics';
+import { googleCalendarURL, outlookCalendarURL } from '../ics';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -45,16 +45,15 @@ export function Confirmation() {
         </h1>
         <p className="app-success__body">
           Your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
-          Tap <strong>Add to Google Calendar</strong> below to save it.
+          Save it to your calendar below.
         </p>
       </section>
 
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to Google Calendar</h2>
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to your calendar</h2>
       <div className="app-prose">
         <p>
-          Open this reminder in Google Calendar. The event will be pre-filled
-          with the expiry date — review it and tap Save in Google Calendar to
-          add it to your account.
+          Open this reminder in your calendar. The event will be pre-filled
+          with the expiry date — review it and save it to your account.
         </p>
       </div>
       <div className="govbb-btn-group app-mt-s">
@@ -66,13 +65,22 @@ export function Confirmation() {
         >
           Add to Google Calendar
         </a>
+        <a
+          className="govbb-btn--secondary"
+          href={outlookCalendarURL(lastReminder)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Add to Microsoft Outlook
+        </a>
       </div>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
       <div className="app-prose">
         <p>
-          Tap <strong>Add to Google Calendar</strong> above to save the event to
-          your account. Google Calendar will let you know when the date is close.
+          Tap one of the buttons above to save the event to your Google Calendar
+          or Microsoft Outlook account. Your calendar will let you know when the
+          date is close.
         </p>
         <p>
           We do not keep a copy of your reminder. Read our{' '}
