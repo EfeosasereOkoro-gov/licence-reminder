@@ -1,8 +1,19 @@
 name: Deploy to GitHub Pages
 
+# Build both master (production) and staging (preview) on every push to
+# either branch, and deploy them as a single Pages artifact:
+#
+#   master  -> https://efeosasereokoro-gov.github.io/licence-reminder/
+#   staging -> https://efeosasereokoro-gov.github.io/licence-reminder/staging/
+#
+# GitHub Pages replaces the whole site on every deploy, so we have to
+# rebuild both branches each time — otherwise pushing one would wipe the
+# other. Each branch is built from its own checkout with the right
+# `--base` so its asset URLs resolve under the correct sub-path.
+
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "staging"]
   workflow_dispatch:
 
 permissions:
@@ -18,28 +29,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout master
         uses: actions/checkout@v4
+        with:
+          ref: master
+          path: master-src
+
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+          path: staging-src
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: Downloads/renew-reminder/package-lock.json
+          cache-dependency-path: |
+            master-src/Downloads/renew-reminder/package-lock.json
+            staging-src/Downloads/renew-reminder/package-lock.json
 
-      - name: Install dependencies
-        working-directory: Downloads/renew-reminder
+      - name: Install master dependencies
+        working-directory: master-src/Downloads/renew-reminder
         run: npm ci
 
-      - name: Build
-        working-directory: Downloads/renew-reminder
+      - name: Build master (base = /licence-reminder/)
+        working-directory: master-src/Downloads/renew-reminder
         run: npm run build
+
+      - name: Install staging dependencies
+        working-directory: staging-src/Downloads/renew-reminder
+        run: npm ci
+
+      - name: Build staging (base = /licence-reminder/staging/)
+        working-directory: staging-src/Downloads/renew-reminder
+        run: npm run build -- --base=/licence-reminder/staging/
+
+      - name: Combine into single Pages artifact
+        run: |
+          set -eux
+          mkdir -p combined
+          cp -r master-src/Downloads/renew-reminder/dist/. combined/
+          mkdir -p combined/staging
+          cp -r staging-src/Downloads/renew-reminder/dist/. combined/staging/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Downloads/renew-reminder/dist
+          path: combined
 
   deploy:
     environment:
