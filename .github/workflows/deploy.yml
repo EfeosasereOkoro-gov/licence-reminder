@@ -1,19 +1,20 @@
 name: Deploy to GitHub Pages
 
-# Build both master (production) and staging (preview) on every push to
-# either branch, and deploy them as a single Pages artifact:
+# Build all three branches on every push and deploy them as one Pages
+# artifact, so each branch keeps its own URL:
 #
-#   master  -> https://efeosasereokoro-gov.github.io/licence-reminder/
-#   staging -> https://efeosasereokoro-gov.github.io/licence-reminder/staging/
+#   master   -> https://efeosasereokoro-gov.github.io/licence-reminder/
+#   staging  -> https://efeosasereokoro-gov.github.io/licence-reminder/staging/
+#   calendar -> https://efeosasereokoro-gov.github.io/licence-reminder/calendar/
 #
-# GitHub Pages replaces the whole site on every deploy, so we have to
-# rebuild both branches each time — otherwise pushing one would wipe the
-# other. Each branch is built from its own checkout with the right
-# `--base` so its asset URLs resolve under the correct sub-path.
+# GitHub Pages replaces the entire site on every deploy, so we always
+# rebuild every branch — otherwise a push to one would wipe the others.
+# Each branch is built from its own checkout with the right `--base` so
+# asset URLs resolve under the correct sub-path.
 
 on:
   push:
-    branches: ["master", "staging"]
+    branches: ["master", "staging", "calendar"]
   workflow_dispatch:
 
 permissions:
@@ -41,6 +42,12 @@ jobs:
           ref: staging
           path: staging-src
 
+      - name: Checkout calendar
+        uses: actions/checkout@v4
+        with:
+          ref: calendar
+          path: calendar-src
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -49,6 +56,7 @@ jobs:
           cache-dependency-path: |
             master-src/Downloads/renew-reminder/package-lock.json
             staging-src/Downloads/renew-reminder/package-lock.json
+            calendar-src/Downloads/renew-reminder/package-lock.json
 
       - name: Install master dependencies
         working-directory: master-src/Downloads/renew-reminder
@@ -66,6 +74,14 @@ jobs:
         working-directory: staging-src/Downloads/renew-reminder
         run: npm run build -- --base=/licence-reminder/staging/
 
+      - name: Install calendar dependencies
+        working-directory: calendar-src/Downloads/renew-reminder
+        run: npm ci
+
+      - name: Build calendar (base = /licence-reminder/calendar/)
+        working-directory: calendar-src/Downloads/renew-reminder
+        run: npm run build -- --base=/licence-reminder/calendar/
+
       - name: Combine into single Pages artifact
         run: |
           set -eux
@@ -73,6 +89,8 @@ jobs:
           cp -r master-src/Downloads/renew-reminder/dist/. combined/
           mkdir -p combined/staging
           cp -r staging-src/Downloads/renew-reminder/dist/. combined/staging/
+          mkdir -p combined/calendar
+          cp -r calendar-src/Downloads/renew-reminder/dist/. combined/calendar/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
