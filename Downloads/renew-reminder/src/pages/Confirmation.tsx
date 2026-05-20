@@ -31,8 +31,6 @@ export function Confirmation() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
-  const reminders = lastReminder.reminderDates.map(d => new Date(d));
-  const offsets = [90, 30, 7];
   const contact = lastReminder.channel === 'email' ? answers.email : answers.phone;
 
   const handleStartAnother = () => {
@@ -53,16 +51,6 @@ export function Confirmation() {
           your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
         </p>
       </section>
-
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">When you'll be reminded</h2>
-      <ul className="app-schedule">
-        {reminders.map((d, i) => (
-          <li className="app-schedule__item" key={d.toISOString()}>
-            <span className="app-schedule__date">{formatLongDate(d)}</span>
-            <span className="app-schedule__note">{offsets[i]} days before expiry</span>
-          </li>
-        ))}
-      </ul>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to Google Calendar</h2>
       <div className="app-prose">
