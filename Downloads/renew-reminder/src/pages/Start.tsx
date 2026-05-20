@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { extractDocument, prewarmExtractor, type ExtractProgress } from '../extractDocument';
+import { extractDocument, prewarmExtractor } from '../extractDocument';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -24,21 +24,17 @@ export function Start() {
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
   const [photoFileName, setPhotoFileName] = useState<string>('');
-  const [progress, setProgress] = useState<ExtractProgress>({ message: '', progress: 0 });
   const [extracted, setExtracted] = useState<{
     itemType: ItemKey | null;
     expiry: Date | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Pre-warm the OCR engine the moment the user opens the photo panel,
-  // so the language data downloads in the background while they read
-  // the disclaimer. By the time they pick a photo the engine is hot.
+  // Load the barcode reader chunk as soon as the user opens the panel,
+  // so by the time they tap Choose a photo it's already in memory.
   useEffect(() => {
     if (!photoOpen) return;
-    let cancelled = false;
-    prewarmExtractor(p => { if (!cancelled) setProgress(p); }).catch(() => {});
-    return () => { cancelled = true; };
+    prewarmExtractor().catch(() => {});
   }, [photoOpen]);
 
   const handleStartManual = () => {
@@ -60,17 +56,13 @@ export function Start() {
     setPhotoStatus('working');
 
     try {
-      const result = await extractDocument(file, setProgress);
+      const result = await extractDocument(file);
 
-      // If we couldn't extract anything useful, ask the user to try
-      // again or fall back to the manual path. The disclaimer promises
-      // we only read these two fields, so we mustn't invent them.
       if (!result.date && !result.itemType) {
         setPhotoStatus('error');
         return;
       }
 
-      // Reset prior answers, then fill what we actually extracted.
       resetAnswers();
       setAnswers({
         itemType: result.itemType ?? null,
@@ -87,14 +79,12 @@ export function Start() {
       });
       setPhotoStatus('done');
     } catch (err) {
-      console.error('OCR failed:', err);
+      console.error('Barcode decode failed:', err);
       setPhotoStatus('error');
     }
   };
 
   const handleContinueAfterPhoto = () => {
-    // If only the date was extracted, hop to the select-item step so the
-    // user can pick the document type; otherwise jump straight to email.
     if (extracted?.itemType) {
       navigate('/contact');
     } else {
@@ -124,33 +114,39 @@ export function Start() {
           aria-expanded={photoOpen}
           aria-controls="photo-shortcut"
         >
-          {photoOpen ? 'Hide photo option' : 'Use a photo of your document'}
+          {photoOpen ? 'Hide barcode option' : 'Scan the barcode on your document'}
         </button>
       </div>
 
-      {/* Photo-extract shortcut — fills Steps 1 + 2 in one go. */}
+      {/* Barcode-scan shortcut — fills Steps 1 + 2 in one go. */}
       {photoOpen && (
         <section id="photo-shortcut" className="app-photo-shortcut" aria-labelledby="photo-shortcut-title">
           <h2 id="photo-shortcut-title" className="govbb-text-h3 app-mb-xs">
-            Use a photo of your document
+            Scan the barcode on the back of your document
           </h2>
 
           <div className="app-disclaimer" role="note" aria-labelledby="photo-disclaimer-title">
             <p id="photo-disclaimer-title" className="app-disclaimer__title">
-              We will only read the document type and the expiry date
+              We only read the barcode
             </p>
             <p>
-              Your photo stays on this device. We do not upload, store, or share the
-              image. We only read what type of document it is (for example, a
-              driver's licence) and the expiry date. You can check and change either
+              The barcode encodes the document type and expiry date — that's
+              everything we use. Your photo stays on this device. We do not upload,
+              store, or share the image. You can check and change either field
               before continuing.
             </p>
           </div>
 
+          <p className="govbb-hint">
+            On a driver's licence, the barcode is the wide striped block on the
+            back. Make sure the whole barcode is in the frame and the photo is
+            sharp.
+          </p>
+
           {photoStatus !== 'done' && (
             <>
               <label htmlFor="document-photo" className="app-photo-button">
-                {photoStatus === 'working' ? 'Reading your document…' : 'Choose a photo'}
+                {photoStatus === 'working' ? 'Reading barcode…' : 'Choose a photo'}
               </label>
               <input
                 ref={fileInputRef}
@@ -167,34 +163,23 @@ export function Start() {
           )}
 
           {photoStatus === 'working' && (
-            <div className="app-photo-progress" role="status" aria-live="polite">
-              <p className="app-photo-progress__label">{progress.message}</p>
-              <div
-                className="app-photo-progress__track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(progress.progress * 100)}
-              >
-                <div
-                  className="app-photo-progress__bar"
-                  style={{ width: `${Math.max(2, progress.progress * 100)}%` }}
-                />
-              </div>
-            </div>
+            <p className="app-photo-status" role="status" aria-live="polite">
+              Reading the barcode from <strong>{photoFileName}</strong>…
+            </p>
           )}
 
           {photoStatus === 'error' && (
             <p className="app-photo-status" role="status" aria-live="polite">
-              We could not read your document. Please try a clearer photo, or use{' '}
-              <strong>Start now</strong> to enter the details manually.
+              We could not find a readable barcode in that photo. Try a closer or
+              sharper photo of the barcode, or use <strong>Start now</strong> to
+              enter the details manually.
             </p>
           )}
 
           {photoStatus === 'done' && extracted && (
             <div className="app-photo-result" aria-labelledby="photo-result-title">
               <p id="photo-result-title" className="app-photo-result__title">
-                We read these details from <strong>{photoFileName}</strong>
+                We read these details from the barcode
               </p>
               <dl className="app-photo-result__list">
                 <div className="app-photo-result__row">
@@ -247,7 +232,7 @@ export function Start() {
       <div className="app-prose">
         <p>You will need:</p>
         <ul>
-          <li>the expiry date shown on your document (or a clear photo of it)</li>
+          <li>the expiry date shown on your document (or the barcode from the back)</li>
           <li>an email address</li>
         </ul>
       </div>
