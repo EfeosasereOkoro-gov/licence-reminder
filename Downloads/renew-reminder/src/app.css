@@ -377,6 +377,77 @@
   display: none;
 }
 
+.app-photo-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.app-photo-progress__label {
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.app-photo-progress__track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-grey-00);
+  overflow: hidden;
+}
+
+.app-photo-progress__bar {
+  height: 100%;
+  background: var(--color-teal-00);
+  transition: width 0.25s ease;
+  border-radius: 999px;
+}
+
+/* ── Verification panel after a successful photo extract ────────────────── */
+
+.app-verify {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.app-verify__intro {
+  margin: 0;
+}
+
+.app-verify__q {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding-top: var(--spacing-s);
+  border-top: 1px solid var(--color-grey-00);
+}
+
+.app-verify__question {
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.app-verify__answer {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-h4);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+}
+
+.app-verify__confirmed {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  line-height: var(--line-height-caption);
+  color: var(--color-green-00);
+  font-weight: var(--font-weight-bold);
+}
+
+.app-verify__confirmed::before {
+  content: "✓ ";
+}
+
 /* ── Message preview dialog ─────────────────────────────────────────────── */
 
 .message-preview {

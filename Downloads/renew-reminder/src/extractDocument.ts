@@ -1,15 +1,78 @@
 import type { ItemKey } from './types';
+import type { Worker } from 'tesseract.js';
+
+export interface ExtractProgress {
+  message: string;
+  progress: number;
+}
 
 export interface ExtractResult {
   itemType: ItemKey | null;
   date: { day: number; month: number; year: number } | null;
-  /** Raw text decoded from the barcode — kept for debugging. */
   rawText: string;
-  /** Barcode format (e.g. PDF_417, QR_CODE) when known. */
-  format?: string;
 }
 
-// ─── Date helpers ────────────────────────────────────────────────────────
+// "Fast" tessdata variant — smaller download and quicker OCR. Accuracy
+// is slightly lower than "best" but still good for sans-serif ID text.
+const TESS_LANG_PATH = 'https://tessdata.projectnaptha.com/4.0.0_fast';
+
+let workerPromise: Promise<Worker> | null = null;
+
+export function prewarmExtractor(
+  onProgress?: (p: ExtractProgress) => void,
+): Promise<Worker> {
+  if (workerPromise) return workerPromise;
+
+  workerPromise = (async () => {
+    onProgress?.({ message: 'Loading recognition engine…', progress: 0 });
+    const { createWorker } = await import('tesseract.js');
+    const worker = await createWorker('eng', 1, {
+      langPath: TESS_LANG_PATH,
+      logger: (m: { status: string; progress: number }) => {
+        const label =
+          m.status === 'loading tesseract core' ? 'Loading recognition engine…' :
+          m.status === 'initializing tesseract' ? 'Starting recognition engine…' :
+          m.status === 'loading language traineddata' ? 'Downloading English language data…' :
+          m.status === 'initializing api' ? 'Getting ready…' :
+          m.status;
+        onProgress?.({ message: label, progress: m.progress * 0.6 });
+      },
+    });
+    return worker;
+  })();
+
+  return workerPromise;
+}
+
+async function shrinkForOCR(file: File, maxDim = 1280): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const longest = Math.max(bitmap.width, bitmap.height);
+  if (longest <= maxDim) return file;
+
+  const scale = maxDim / longest;
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas: OffscreenCanvas | HTMLCanvasElement =
+    typeof OffscreenCanvas !== 'undefined'
+      ? new OffscreenCanvas(w, h)
+      : Object.assign(document.createElement('canvas'), { width: w, height: h });
+
+  const ctx = canvas.getContext('2d') as
+    | OffscreenCanvasRenderingContext2D
+    | CanvasRenderingContext2D;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+
+  if ('convertToBlob' in canvas) {
+    return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
+  }
+  return new Promise<Blob>(resolve => {
+    (canvas as HTMLCanvasElement).toBlob(b => resolve(b!), 'image/jpeg', 0.9);
+  });
+}
+
+// ─── Parsers ─────────────────────────────────────────────────────────────
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
                 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -28,11 +91,10 @@ function isPlausibleDate(day: number, month: number, year: number): boolean {
   return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day;
 }
 
-function parseDateInText(text: string): { day: number; month: number; year: number } | null {
+function parseDateLine(line: string): { day: number; month: number; year: number } | null {
   const monthsAlt = [...MONTHS, ...MONTH_LONG].join('|');
 
-  // "Jan 01, 2022" or "January 1 2022"
-  const m1 = text.match(new RegExp(`(${monthsAlt})\\.?\\s*(\\d{1,2})[,\\s]+(\\d{4})`, 'i'));
+  const m1 = line.match(new RegExp(`(${monthsAlt})\\.?\\s*(\\d{1,2})[,\\s]+(\\d{4})`, 'i'));
   if (m1) {
     const month = monthIndex(m1[1]) + 1;
     const day = Number(m1[2]);
@@ -40,8 +102,7 @@ function parseDateInText(text: string): { day: number; month: number; year: numb
     if (isPlausibleDate(day, month, year)) return { day, month, year };
   }
 
-  // "01 Jan 2022"
-  const m2 = text.match(new RegExp(`(\\d{1,2})\\s+(${monthsAlt})\\.?\\s+(\\d{4})`, 'i'));
+  const m2 = line.match(new RegExp(`(\\d{1,2})\\s+(${monthsAlt})\\.?\\s+(\\d{4})`, 'i'));
   if (m2) {
     const day = Number(m2[1]);
     const month = monthIndex(m2[2]) + 1;
@@ -49,8 +110,7 @@ function parseDateInText(text: string): { day: number; month: number; year: numb
     if (isPlausibleDate(day, month, year)) return { day, month, year };
   }
 
-  // "01/01/2022" with /, -, or .
-  const m3 = text.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  const m3 = line.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
   if (m3) {
     const day = Number(m3[1]);
     const month = Number(m3[2]);
@@ -61,139 +121,56 @@ function parseDateInText(text: string): { day: number; month: number; year: numb
   return null;
 }
 
-// ─── Format-specific parsers ─────────────────────────────────────────────
+function findExpiryDate(text: string): { day: number; month: number; year: number } | null {
+  const lines = text.split(/[\r\n]+/).map(l => l.trim()).filter(Boolean);
+  const expiryKeyword = /\b(expir|exp\.?\s*date|valid\s+(until|to|till))\b/i;
 
-/**
- * AAMVA PDF417 — the standard barcode on most US, Canadian, and many
- * Caribbean driver's licences. Payload is tab-separated lines of
- * three-letter field tags followed by their values.
- *
- *   DBA  Expiration date (MMDDCCYY for 2016+ AAMVA, CCYYMMDD for earlier)
- *   DBB  Date of birth
- *   DAQ  Licence number
- *   DBN  First name
- *   etc.
- *
- * We only read DBA; the disclaimer commits us to that.
- */
-function parseAAMVA(text: string): ExtractResult | null {
-  // Header is usually "@\n" then "ANSI <iin>".
-  if (!/ANSI\s*\d{6}/i.test(text)) return null;
-
-  const dbaMatch = text.match(/DBA(\d{8})/);
-  if (!dbaMatch) {
-    return { itemType: 'drivers-licence', date: null, rawText: text, format: 'AAMVA' };
+  for (let i = 0; i < lines.length; i++) {
+    if (!expiryKeyword.test(lines[i])) continue;
+    for (let j = i; j <= Math.min(i + 2, lines.length - 1); j++) {
+      const date = parseDateLine(lines[j]);
+      if (date) return date;
+    }
   }
 
-  const s = dbaMatch[1];
-
-  // Try MMDDCCYY first (modern AAMVA).
-  const m1 = Number(s.slice(0, 2));
-  const d1 = Number(s.slice(2, 4));
-  const y1 = Number(s.slice(4, 8));
-  if (isPlausibleDate(d1, m1, y1)) {
-    return {
-      itemType: 'drivers-licence',
-      date: { day: d1, month: m1, year: y1 },
-      rawText: text,
-      format: 'AAMVA',
-    };
-  }
-
-  // Fall back to CCYYMMDD (older AAMVA).
-  const y2 = Number(s.slice(0, 4));
-  const m2 = Number(s.slice(4, 6));
-  const d2 = Number(s.slice(6, 8));
-  if (isPlausibleDate(d2, m2, y2)) {
-    return {
-      itemType: 'drivers-licence',
-      date: { day: d2, month: m2, year: y2 },
-      rawText: text,
-      format: 'AAMVA',
-    };
-  }
-
-  return { itemType: 'drivers-licence', date: null, rawText: text, format: 'AAMVA' };
+  const all = lines.map(parseDateLine).filter((d): d is NonNullable<typeof d> => !!d);
+  if (all.length === 0) return null;
+  all.sort((a, b) =>
+    new Date(b.year, b.month - 1, b.day).getTime() -
+    new Date(a.year, a.month - 1, a.day).getTime(),
+  );
+  return all[0];
 }
 
-/**
- * Generic fallback for QR codes / other barcode formats that aren't
- * AAMVA. Looks for an expiry-like keyword followed by a date, then
- * falls back to any plausible date in the text.
- */
-function parseGeneric(text: string, format?: string): ExtractResult {
-  const lines = text.split(/[\r\n\t;|]+/).map(l => l.trim()).filter(Boolean);
-
-  // Document type from keywords.
-  const lower = text.toLowerCase();
-  let itemType: ItemKey | null = null;
-  if (/driv(er|ing)/.test(lower) && /lic/.test(lower)) itemType = 'drivers-licence';
-  else if (/\bpassport\b/.test(lower)) itemType = 'passport';
-  else if (/vehicle/.test(lower) && /(reg|licen)/.test(lower)) itemType = 'vehicle-registration';
-  else if (/\bpermit\b/.test(lower)) itemType = 'permit';
-
-  // Date — prefer lines containing an expiry keyword.
-  const expiryKeyword = /\b(expir|exp\.?\s*date|valid\s+(until|to|till))\b/i;
-  for (const line of lines) {
-    if (!expiryKeyword.test(line)) continue;
-    const date = parseDateInText(line);
-    if (date) return { itemType, date, rawText: text, format };
-  }
-  for (const line of lines) {
-    const date = parseDateInText(line);
-    if (date) return { itemType, date, rawText: text, format };
-  }
-  return { itemType, date: null, rawText: text, format };
+function detectItemType(text: string): ItemKey | null {
+  const t = text.toLowerCase();
+  if (/driv(er|ing)['’]?s?\s*lic[ae]?nce/.test(t)) return 'drivers-licence';
+  if (/driver/.test(t) && /lic/.test(t)) return 'drivers-licence';
+  if (/\bpassport\b/.test(t)) return 'passport';
+  if (/vehicle\s+(reg|licen)/.test(t) || /motor\s+vehicle/.test(t)) return 'vehicle-registration';
+  if (/\bpermit\b/.test(t)) return 'permit';
+  return null;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────
 
-/**
- * Load the image into an HTMLImageElement so ZXing can decode it.
- */
-function fileToImage(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read the image')); };
-    img.src = url;
-  });
-}
+export async function extractDocument(
+  image: File,
+  onProgress?: (p: ExtractProgress) => void,
+): Promise<ExtractResult> {
+  const worker = await prewarmExtractor(onProgress);
 
-/**
- * Pre-warm the barcode reader by importing the chunk early. Cheap and
- * worth doing when the user opens the photo panel so the chunk is in
- * memory before they tap Choose a photo.
- */
-let readerPromise: Promise<typeof import('@zxing/browser')> | null = null;
+  onProgress?.({ message: 'Preparing image…', progress: 0.6 });
+  const resized = await shrinkForOCR(image);
 
-export function prewarmExtractor(): Promise<unknown> {
-  if (!readerPromise) {
-    readerPromise = import('@zxing/browser');
-  }
-  return readerPromise;
-}
+  onProgress?.({ message: `Reading ${image.name}…`, progress: 0.65 });
+  const result = await worker.recognize(resized);
 
-/**
- * Decode the barcode from `image` and return the document type and
- * expiry date. Throws if no barcode can be found.
- */
-export async function extractDocument(image: File): Promise<ExtractResult> {
-  const [{ BrowserMultiFormatReader }, img] = await Promise.all([
-    prewarmExtractor() as Promise<typeof import('@zxing/browser')>,
-    fileToImage(image),
-  ]);
+  onProgress?.({ message: 'Looking for the document type and expiry date…', progress: 0.95 });
+  const text = result.data.text;
+  const date = findExpiryDate(text);
+  const itemType = detectItemType(text);
 
-  const reader = new BrowserMultiFormatReader();
-  const result = await reader.decodeFromImageElement(img);
-  const text = result.getText();
-  const format = String(result.getBarcodeFormat());
-
-  // Try AAMVA first — most driver's licences. Falls back to generic
-  // keyword/date scanning for QR codes and other barcode payloads.
-  const aamva = parseAAMVA(text);
-  if (aamva) return aamva;
-
-  return parseGeneric(text, format);
+  onProgress?.({ message: 'Done', progress: 1 });
+  return { itemType, date, rawText: text };
 }

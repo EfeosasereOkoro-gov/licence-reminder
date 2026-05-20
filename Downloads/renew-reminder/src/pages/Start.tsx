@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { extractDocument, prewarmExtractor } from '../extractDocument';
+import { extractDocument, prewarmExtractor, type ExtractProgress } from '../extractDocument';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
-import { ITEM_LABELS, type ItemKey } from '../types';
+import { ITEM_HINTS, ITEM_LABELS, type ItemKey } from '../types';
 
 function formatLongDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -14,27 +14,50 @@ function formatLongDate(d: Date): string {
   });
 }
 
-type PhotoStatus = 'idle' | 'working' | 'done' | 'error';
+const ITEM_KEYS: ItemKey[] = ['drivers-licence', 'vehicle-registration', 'passport', 'permit', 'custom'];
+
+type PhotoStatus = 'idle' | 'working' | 'verifying' | 'error';
+type Verdict = 'pending' | 'confirmed' | 'editing';
+
+interface Extracted {
+  itemType: ItemKey | null;
+  expiry: Date | null;
+}
 
 export function Start() {
   usePageTitle(null);
 
   const { resetAnswers, setAnswers } = useJourney();
 
+  // Photo flow state
   const [photoOpen, setPhotoOpen] = useState(false);
   const [photoStatus, setPhotoStatus] = useState<PhotoStatus>('idle');
   const [photoFileName, setPhotoFileName] = useState<string>('');
-  const [extracted, setExtracted] = useState<{
-    itemType: ItemKey | null;
-    expiry: Date | null;
-  } | null>(null);
+  const [progress, setProgress] = useState<ExtractProgress>({ message: '', progress: 0 });
+  const [extracted, setExtracted] = useState<Extracted | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load the barcode reader chunk as soon as the user opens the panel,
-  // so by the time they tap Choose a photo it's already in memory.
+  // Verification flow state — once OCR completes we ask two Yes/No
+  // questions in sequence: is this the document type, then is this
+  // the expiry date. Each can be corrected inline before continuing.
+  const [typeVerdict, setTypeVerdict] = useState<Verdict>('pending');
+  const [dateVerdict, setDateVerdict] = useState<Verdict>('pending');
+
+  // Inline edit-form values used when the user says "No".
+  const [editType, setEditType] = useState<ItemKey | ''>('');
+  const [editCustomName, setEditCustomName] = useState('');
+  const [editDay, setEditDay] = useState('');
+  const [editMonth, setEditMonth] = useState('');
+  const [editYear, setEditYear] = useState('');
+  const [editError, setEditError] = useState<string>('');
+
+  // Pre-warm the OCR engine when the panel opens so the language data
+  // downloads in the background while the user reads the disclaimer.
   useEffect(() => {
     if (!photoOpen) return;
-    prewarmExtractor().catch(() => {});
+    let cancelled = false;
+    prewarmExtractor(p => { if (!cancelled) setProgress(p); }).catch(() => {});
+    return () => { cancelled = true; };
   }, [photoOpen]);
 
   const handleStartManual = () => {
@@ -46,50 +69,130 @@ export function Start() {
     setPhotoOpen(open => !open);
   };
 
+  const resetPhotoState = () => {
+    setPhotoStatus('idle');
+    setExtracted(null);
+    setPhotoFileName('');
+    setTypeVerdict('pending');
+    setDateVerdict('pending');
+    setEditType('');
+    setEditCustomName('');
+    setEditDay('');
+    setEditMonth('');
+    setEditYear('');
+    setEditError('');
+  };
+
   const handlePhoto = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (!file) return;
 
+    resetPhotoState();
     setPhotoFileName(file.name);
-    setExtracted(null);
     setPhotoStatus('working');
 
     try {
-      const result = await extractDocument(file);
+      const result = await extractDocument(file, setProgress);
 
       if (!result.date && !result.itemType) {
         setPhotoStatus('error');
         return;
       }
 
-      resetAnswers();
-      setAnswers({
-        itemType: result.itemType ?? null,
-        expiryDay: result.date ? String(result.date.day) : '',
-        expiryMonth: result.date ? String(result.date.month) : '',
-        expiryYear: result.date ? String(result.date.year) : '',
-      });
-
-      setExtracted({
+      const ex: Extracted = {
         itemType: result.itemType,
         expiry: result.date
           ? new Date(result.date.year, result.date.month - 1, result.date.day)
           : null,
-      });
-      setPhotoStatus('done');
+      };
+      setExtracted(ex);
+
+      // Pre-fill the edit-form fields so "No" jumps to the OCR'd value
+      // rather than an empty form — the user usually only needs a tweak.
+      setEditType(ex.itemType ?? '');
+      if (ex.expiry) {
+        setEditDay(String(ex.expiry.getDate()));
+        setEditMonth(String(ex.expiry.getMonth() + 1));
+        setEditYear(String(ex.expiry.getFullYear()));
+      }
+
+      // If OCR couldn't read one field, drop straight into editing mode
+      // for it — there's no value to confirm.
+      setTypeVerdict(ex.itemType ? 'pending' : 'editing');
+
+      setPhotoStatus('verifying');
     } catch (err) {
-      console.error('Barcode decode failed:', err);
+      console.error('OCR failed:', err);
       setPhotoStatus('error');
     }
   };
 
-  const handleContinueAfterPhoto = () => {
-    if (extracted?.itemType) {
-      navigate('/contact');
-    } else {
-      navigate('/select-item');
+  // ── Confirm / edit the document type ──────────────────────────────────
+
+  const confirmType = () => setTypeVerdict('confirmed');
+  const editTypeNo = () => { setEditError(''); setTypeVerdict('editing'); };
+  const saveTypeEdit = () => {
+    if (!editType) {
+      setEditError('Choose the type of document');
+      return;
     }
+    if (editType === 'custom' && !editCustomName.trim()) {
+      setEditError('Enter a name for the reminder');
+      return;
+    }
+    setEditError('');
+    setExtracted(prev => prev && { ...prev, itemType: editType as ItemKey });
+    setTypeVerdict('confirmed');
+  };
+
+  // ── Confirm / edit the expiry date ────────────────────────────────────
+
+  const confirmDate = () => setDateVerdict('confirmed');
+  const editDateNo = () => { setEditError(''); setDateVerdict('editing'); };
+  const saveDateEdit = () => {
+    const day = Number(editDay);
+    const month = Number(editMonth);
+    const year = Number(editYear);
+    if (!editDay || !editMonth || !editYear) {
+      setEditError('Enter the expiry date');
+      return;
+    }
+    if (
+      !Number.isInteger(day) || day < 1 || day > 31 ||
+      !Number.isInteger(month) || month < 1 || month > 12 ||
+      !Number.isInteger(year) || year < 1900 || year > 2100
+    ) {
+      setEditError('Enter a real date — for example, 15 06 2027');
+      return;
+    }
+    const d = new Date(year, month - 1, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
+      setEditError('Enter a real date — for example, 15 06 2027');
+      return;
+    }
+    setEditError('');
+    setExtracted(prev => prev && { ...prev, expiry: d });
+    setDateVerdict('confirmed');
+  };
+
+  const bothConfirmed =
+    typeVerdict === 'confirmed' &&
+    dateVerdict === 'confirmed' &&
+    extracted?.itemType &&
+    extracted?.expiry;
+
+  const handleContinue = () => {
+    if (!extracted?.itemType || !extracted.expiry) return;
+    resetAnswers();
+    setAnswers({
+      itemType: extracted.itemType,
+      customName: editType === 'custom' ? editCustomName.trim() : '',
+      expiryDay: String(extracted.expiry.getDate()),
+      expiryMonth: String(extracted.expiry.getMonth() + 1),
+      expiryYear: String(extracted.expiry.getFullYear()),
+    });
+    navigate('/contact');
   };
 
   return (
@@ -114,39 +217,31 @@ export function Start() {
           aria-expanded={photoOpen}
           aria-controls="photo-shortcut"
         >
-          {photoOpen ? 'Hide barcode option' : 'Scan the barcode on your document'}
+          {photoOpen ? 'Hide photo option' : 'Use a photo of your document'}
         </button>
       </div>
 
-      {/* Barcode-scan shortcut — fills Steps 1 + 2 in one go. */}
       {photoOpen && (
         <section id="photo-shortcut" className="app-photo-shortcut" aria-labelledby="photo-shortcut-title">
           <h2 id="photo-shortcut-title" className="govbb-text-h3 app-mb-xs">
-            Scan the barcode on the back of your document
+            Use a photo of your document
           </h2>
 
           <div className="app-disclaimer" role="note" aria-labelledby="photo-disclaimer-title">
             <p id="photo-disclaimer-title" className="app-disclaimer__title">
-              We only read the barcode
+              We will only read the document type and the expiry date
             </p>
             <p>
-              The barcode encodes the document type and expiry date — that's
-              everything we use. Your photo stays on this device. We do not upload,
-              store, or share the image. You can check and change either field
-              before continuing.
+              Your photo stays on this device. We do not upload, store, or share the
+              image. We only read what type of document it is and the expiry date,
+              and we'll ask you to confirm each before continuing.
             </p>
           </div>
 
-          <p className="govbb-hint">
-            On a driver's licence, the barcode is the wide striped block on the
-            back. Make sure the whole barcode is in the frame and the photo is
-            sharp.
-          </p>
-
-          {photoStatus !== 'done' && (
+          {photoStatus !== 'verifying' && (
             <>
               <label htmlFor="document-photo" className="app-photo-button">
-                {photoStatus === 'working' ? 'Reading barcode…' : 'Choose a photo'}
+                {photoStatus === 'working' ? 'Reading your document…' : 'Choose a photo'}
               </label>
               <input
                 ref={fileInputRef}
@@ -163,66 +258,248 @@ export function Start() {
           )}
 
           {photoStatus === 'working' && (
-            <p className="app-photo-status" role="status" aria-live="polite">
-              Reading the barcode from <strong>{photoFileName}</strong>…
-            </p>
+            <div className="app-photo-progress" role="status" aria-live="polite">
+              <p className="app-photo-progress__label">{progress.message}</p>
+              <div
+                className="app-photo-progress__track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress.progress * 100)}
+              >
+                <div
+                  className="app-photo-progress__bar"
+                  style={{ width: `${Math.max(2, progress.progress * 100)}%` }}
+                />
+              </div>
+            </div>
           )}
 
           {photoStatus === 'error' && (
             <p className="app-photo-status" role="status" aria-live="polite">
-              We could not find a readable barcode in that photo. Try a closer or
-              sharper photo of the barcode, or use <strong>Start now</strong> to
-              enter the details manually.
+              We could not read your document. Please try a clearer photo, or use{' '}
+              <strong>Start now</strong> to enter the details manually.
             </p>
           )}
 
-          {photoStatus === 'done' && extracted && (
-            <div className="app-photo-result" aria-labelledby="photo-result-title">
-              <p id="photo-result-title" className="app-photo-result__title">
-                We read these details from the barcode
+          {photoStatus === 'verifying' && extracted && (
+            <div className="app-verify" aria-labelledby="verify-title">
+              <p id="verify-title" className="app-verify__intro">
+                We read these details from <strong>{photoFileName}</strong>. Please
+                confirm them.
               </p>
-              <dl className="app-photo-result__list">
-                <div className="app-photo-result__row">
-                  <dt>Document type</dt>
-                  <dd>
-                    {extracted.itemType
-                      ? ITEM_LABELS[extracted.itemType]
-                      : <em>Not detected — you'll pick it on the next step</em>}
-                  </dd>
-                </div>
-                <div className="app-photo-result__row">
-                  <dt>Expiry date</dt>
-                  <dd>
+
+              {/* ── Question 1: document type ─────────────────────────── */}
+              <section className="app-verify__q" aria-labelledby="verify-type-q">
+                <p id="verify-type-q" className="app-verify__question">
+                  Is this the type of document?
+                </p>
+                <p className="app-verify__answer">
+                  {extracted.itemType
+                    ? ITEM_LABELS[extracted.itemType]
+                    : <em>We could not detect a document type</em>}
+                </p>
+
+                {typeVerdict === 'pending' && extracted.itemType && (
+                  <div className="govbb-btn-group app-mt-s">
+                    <button type="button" className="govbb-btn" onClick={confirmType}>
+                      Yes
+                    </button>
+                    <button type="button" className="govbb-btn--secondary" onClick={editTypeNo}>
+                      No, choose another
+                    </button>
+                  </div>
+                )}
+
+                {typeVerdict === 'editing' && (
+                  <fieldset className="govbb-fieldset app-mt-s">
+                    <legend className="govbb-fieldset__legend">
+                      What type of document is it?
+                    </legend>
+                    <p className="govbb-hint">Choose one option.</p>
+                    {editError && (
+                      <p className="govbb-error-message app-mt-xs">
+                        <span className="govbb-visually-hidden">Error: </span>
+                        {editError}
+                      </p>
+                    )}
+                    <div className="app-stack-s app-mt-s" role="radiogroup">
+                      {ITEM_KEYS.map(key => (
+                        <div key={key}>
+                          <div className="govbb-radio-item">
+                            <input
+                              id={`edit-item-${key}`}
+                              name="edit-item"
+                              type="radio"
+                              className="govbb-radio"
+                              value={key}
+                              checked={editType === key}
+                              onChange={() => setEditType(key)}
+                            />
+                            <label className="govbb-radio-item__label" htmlFor={`edit-item-${key}`}>
+                              {ITEM_LABELS[key]}
+                              <span className="govbb-hint" style={{ display: 'block' }}>
+                                {ITEM_HINTS[key]}
+                              </span>
+                            </label>
+                          </div>
+                          {key === 'custom' && editType === 'custom' && (
+                            <div className="govbb-radio-item__conditional">
+                              <div className="govbb-form-group">
+                                <label className="govbb-label" htmlFor="edit-custom-name">
+                                  Name your reminder
+                                </label>
+                                <div className="govbb-input-wrapper">
+                                  <input
+                                    id="edit-custom-name"
+                                    type="text"
+                                    className="govbb-input"
+                                    value={editCustomName}
+                                    maxLength={60}
+                                    onChange={e => setEditCustomName(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="govbb-btn-group app-mt-s">
+                      <button type="button" className="govbb-btn" onClick={saveTypeEdit}>
+                        Save and continue
+                      </button>
+                    </div>
+                  </fieldset>
+                )}
+
+                {typeVerdict === 'confirmed' && extracted.itemType && (
+                  <p className="app-verify__confirmed">
+                    Confirmed: {ITEM_LABELS[extracted.itemType]}
+                  </p>
+                )}
+              </section>
+
+              {/* ── Question 2: expiry date — only after type is confirmed ── */}
+              {typeVerdict === 'confirmed' && (
+                <section className="app-verify__q" aria-labelledby="verify-date-q">
+                  <p id="verify-date-q" className="app-verify__question">
+                    Is this the expiry date?
+                  </p>
+                  <p className="app-verify__answer">
                     {extracted.expiry
                       ? formatLongDate(extracted.expiry)
-                      : <em>Not detected — you'll enter it on the next step</em>}
-                  </dd>
+                      : <em>We could not detect an expiry date</em>}
+                  </p>
+
+                  {dateVerdict === 'pending' && extracted.expiry && (
+                    <div className="govbb-btn-group app-mt-s">
+                      <button type="button" className="govbb-btn" onClick={confirmDate}>
+                        Yes
+                      </button>
+                      <button type="button" className="govbb-btn--secondary" onClick={editDateNo}>
+                        No, enter the date
+                      </button>
+                    </div>
+                  )}
+
+                  {dateVerdict === 'pending' && !extracted.expiry && (
+                    <div className="govbb-btn-group app-mt-s">
+                      <button type="button" className="govbb-btn" onClick={editDateNo}>
+                        Enter the date
+                      </button>
+                    </div>
+                  )}
+
+                  {dateVerdict === 'editing' && (
+                    <fieldset className="govbb-fieldset app-mt-s" role="group">
+                      <legend className="govbb-fieldset__legend">
+                        When does it expire?
+                      </legend>
+                      <p className="govbb-hint">For example, 15 06 2027.</p>
+                      {editError && (
+                        <p className="govbb-error-message app-mt-xs">
+                          <span className="govbb-visually-hidden">Error: </span>
+                          {editError}
+                        </p>
+                      )}
+                      <div className="govbb-date-input app-mt-s">
+                        <div className="govbb-date-input__part">
+                          <label className="govbb-date-input__label" htmlFor="edit-day">Day</label>
+                          <div className="govbb-date-input-wrapper">
+                            <input
+                              id="edit-day"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              autoComplete="off"
+                              className="govbb-date-input__field"
+                              value={editDay}
+                              onChange={e => setEditDay(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                          </div>
+                        </div>
+                        <div className="govbb-date-input__part">
+                          <label className="govbb-date-input__label" htmlFor="edit-month">Month</label>
+                          <div className="govbb-date-input-wrapper">
+                            <input
+                              id="edit-month"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={2}
+                              autoComplete="off"
+                              className="govbb-date-input__field"
+                              value={editMonth}
+                              onChange={e => setEditMonth(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                          </div>
+                        </div>
+                        <div className="govbb-date-input__part">
+                          <label className="govbb-date-input__label" htmlFor="edit-year">Year</label>
+                          <div className="govbb-date-input-wrapper govbb-date-input-wrapper--year">
+                            <input
+                              id="edit-year"
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              maxLength={4}
+                              autoComplete="off"
+                              className="govbb-date-input__field"
+                              value={editYear}
+                              onChange={e => setEditYear(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="govbb-btn-group app-mt-s">
+                        <button type="button" className="govbb-btn" onClick={saveDateEdit}>
+                          Save and continue
+                        </button>
+                      </div>
+                    </fieldset>
+                  )}
+
+                  {dateVerdict === 'confirmed' && extracted.expiry && (
+                    <p className="app-verify__confirmed">
+                      Confirmed: {formatLongDate(extracted.expiry)}
+                    </p>
+                  )}
+                </section>
+              )}
+
+              {/* ── Final continue ─────────────────────────────────────── */}
+              {bothConfirmed && (
+                <div className="govbb-btn-group app-mt-m">
+                  <button type="button" className="govbb-btn--secondary" onClick={resetPhotoState}>
+                    Try another photo
+                  </button>
+                  <button type="button" className="govbb-btn" onClick={handleContinue}>
+                    Continue
+                  </button>
                 </div>
-              </dl>
-              <p className="govbb-hint">
-                If anything is wrong, you can change it on the check-answers page
-                before setting the reminder.
-              </p>
-              <div className="govbb-btn-group">
-                <button
-                  type="button"
-                  className="govbb-btn--secondary"
-                  onClick={() => {
-                    setPhotoStatus('idle');
-                    setExtracted(null);
-                    setPhotoFileName('');
-                  }}
-                >
-                  Try another photo
-                </button>
-                <button
-                  type="button"
-                  className="govbb-btn"
-                  onClick={handleContinueAfterPhoto}
-                >
-                  Continue
-                </button>
-              </div>
+              )}
             </div>
           )}
         </section>
@@ -232,7 +509,7 @@ export function Start() {
       <div className="app-prose">
         <p>You will need:</p>
         <ul>
-          <li>the expiry date shown on your document (or the barcode from the back)</li>
+          <li>the expiry date shown on your document (or a clear photo of it)</li>
           <li>an email address</li>
         </ul>
       </div>
