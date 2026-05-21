@@ -35,9 +35,7 @@ export function SaveToCalendar() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
-  const reminderDates = lastReminder.reminderDates.map(d => new Date(d));
-  const offsets = lastReminder.reminderOffsets;
-  const multi = offsets.length > 1;
+  const reminderDate = new Date(lastReminder.reminderDate);
 
   const handleStartAnother = () => {
     resetAnswers({ keepContact: true });
@@ -55,20 +53,12 @@ export function SaveToCalendar() {
           {formatLongDate(expiry)}.
         </p>
         <p>
-          {multi
-            ? `You've chosen ${offsets.length} reminders. We'll add ${offsets.length} events to your calendar:`
-            : 'We\'ve prepared a reminder event for:'}
+          We've prepared a reminder event for{' '}
+          <strong>{formatLongDate(reminderDate)}</strong>{' '}
+          <span className="govbb-hint" style={{ display: 'inline' }}>
+            ({lastReminder.reminderOffset} days before expiry)
+          </span>.
         </p>
-        <ul>
-          {reminderDates.map((d, i) => (
-            <li key={d.toISOString()}>
-              <strong>{formatLongDate(d)}</strong>{' '}
-              <span className="govbb-hint" style={{ display: 'inline' }}>
-                ({offsets[i]} days before expiry)
-              </span>
-            </li>
-          ))}
-        </ul>
       </div>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">Choose your calendar</h2>
@@ -97,18 +87,10 @@ export function SaveToCalendar() {
           Add to Apple Calendar
         </button>
       </div>
-
-      {multi && (
-        <div className="app-disclaimer app-mt-s" role="note">
-          <p className="app-disclaimer__title">If you use Google or Outlook</p>
-          <p>
-            The button opens the earliest reminder ({offsets[0]} days before).
-            The other dates are listed in the event description — you'll need to
-            add those reminders to your calendar yourself. <strong>Apple
-            Calendar</strong> gets all {offsets.length} events in one file.
-          </p>
-        </div>
-      )}
+      <p className="govbb-hint app-mt-xs">
+        Apple Calendar downloads a small file; opening it on your phone or laptop
+        adds the event.
+      </p>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">After you've saved it</h2>
       <div className="app-prose">

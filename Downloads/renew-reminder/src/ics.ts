@@ -1,21 +1,16 @@
 import type { StoredReminder } from './types';
 
-/**
- * "Renew your X" works for most things — driver's licence, passport,
- * vehicle registration, ID card. For a custom name we keep it generic
- * because we don't know whether the document renews or is reissued.
- */
 function eventTitle(reminder: StoredReminder): string {
   return `Renew your ${reminder.itemLabel}`;
 }
 
 /**
- * Build a Google Calendar "create event" URL. Event lands 30 days
- * before the actual expiry so the user gets useful lead-time.
+ * Build a Google Calendar "create event" URL. Event lands on
+ * `reminderDate` — the user's chosen number of days before the
+ * actual expiry.
  */
 export function googleCalendarURL(reminder: StoredReminder): string {
-  const expiry = new Date(reminder.expiryISO);
-  const eventDate = addDays(expiry, -30);
+  const eventDate = new Date(reminder.reminderDate);
 
   const start = formatDateUTC(eventDate);
   const end = formatDateUTC(addDays(eventDate, 1));
@@ -31,12 +26,11 @@ export function googleCalendarURL(reminder: StoredReminder): string {
 }
 
 /**
- * Build a Microsoft Outlook deep-link to outlook.live.com. Microsoft
+ * Build a Microsoft Outlook deep-link. Uses outlook.live.com; Microsoft
  * 365 / business accounts auto-redirect to outlook.office.com.
  */
 export function outlookCalendarURL(reminder: StoredReminder): string {
-  const expiry = new Date(reminder.expiryISO);
-  const eventDate = addDays(expiry, -30);
+  const eventDate = new Date(reminder.reminderDate);
 
   const startdt = formatDateOnly(eventDate);
   const enddt = formatDateOnly(addDays(eventDate, 1));
@@ -55,15 +49,11 @@ export function outlookCalendarURL(reminder: StoredReminder): string {
 }
 
 /**
- * Build an iCalendar (.ics) file. Apple Calendar, Thunderbird, and
- * most native calendar apps accept this format directly. Carries the
- * event on the same 30-days-before date as the deep-links.
- *
- * Returns the file contents as a string.
+ * Build an iCalendar (.ics) file for Apple Calendar / Thunderbird /
+ * any native calendar app that imports .ics.
  */
 export function buildICS(reminder: StoredReminder): string {
-  const expiry = new Date(reminder.expiryISO);
-  const eventDate = addDays(expiry, -30);
+  const eventDate = new Date(reminder.reminderDate);
 
   const dtstart = formatDateUTC(eventDate);
   const dtend = formatDateUTC(addDays(eventDate, 1));
@@ -90,11 +80,7 @@ export function buildICS(reminder: StoredReminder): string {
   return lines.join('\r\n');
 }
 
-/**
- * Trigger a browser download of the .ics for the given reminder.
- * On iOS Safari, opening the resulting file lands the event in
- * Apple Calendar's "Add event" sheet.
- */
+/** Trigger a browser download of the .ics for the given reminder. */
 export function downloadICS(reminder: StoredReminder): void {
   const ics = buildICS(reminder);
   const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
@@ -107,7 +93,6 @@ export function downloadICS(reminder: StoredReminder): void {
   link.click();
   document.body.removeChild(link);
 
-  // Defer revoke so iOS Safari has time to fetch the blob.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -120,7 +105,7 @@ function buildEventDescription(reminder: StoredReminder): string {
   return [
     `Your ${reminder.itemLabel} expires on ${expiryLong}.`,
     '',
-    'This reminder lands 30 days before the expiry date so you have time to renew.',
+    `This reminder lands ${reminder.reminderOffset} days before that date so you have time to renew.`,
     '',
     `Reference: ${reminder.id} (quote this if you contact the Government of Barbados about this reminder)`,
   ].join('\n');

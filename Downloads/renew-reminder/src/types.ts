@@ -15,7 +15,7 @@ export interface Answers {
   expiryMonth: string;
   expiryYear: string;
   /** Days-before-expiry the user picked on Check Answers. */
-  reminderOffsets: number[];
+  reminderOffset: number;
   channel: Channel | null;
   email: string;
   phone: string;
@@ -26,10 +26,10 @@ export interface StoredReminder {
   itemLabel: string;
   expiryISO: string;
   channel: Channel;
-  /** Days-before-expiry chosen by the user. Each becomes a calendar event. */
-  reminderOffsets: number[];
-  /** Computed calendar dates, one per offset. ISO strings. */
-  reminderDates: string[];
+  /** Days-before-expiry chosen by the user. Becomes the calendar event date. */
+  reminderOffset: number;
+  /** Computed calendar date (expiry minus reminderOffset days). ISO string. */
+  reminderDate: string;
   createdAtISO: string;
   retainUntilISO: string;
 }

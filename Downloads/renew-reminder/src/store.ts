@@ -7,9 +7,9 @@ export const EMPTY_ANSWERS: Answers = {
   expiryDay: '',
   expiryMonth: '',
   expiryYear: '',
-  // Default to the single 30-day-before reminder. The user can change
-  // this on Check Answers; at least one must be selected to submit.
-  reminderOffsets: [30],
+  // Default to a 30-day-before reminder. The user can change this on
+  // Check Answers.
+  reminderOffset: 30,
   // Email is the only supported channel today — SMS will return once we
   // wire up a provider. Defaulting here so the journey is always valid
   // even though there's no longer a step that lets the user pick.
@@ -78,12 +78,10 @@ export function generateReminderId(): string {
   return `REM-${block()}-${block()}`;
 }
 
-export function computeReminderDates(expiry: Date, offsets: number[]): Date[] {
-  return offsets.map(d => {
-    const date = new Date(expiry);
-    date.setDate(date.getDate() - d);
-    return date;
-  });
+export function computeReminderDate(expiry: Date, offsetDays: number): Date {
+  const date = new Date(expiry);
+  date.setDate(date.getDate() - offsetDays);
+  return date;
 }
 
 export function computeRetainUntil(expiry: Date): Date {
