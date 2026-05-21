@@ -41,7 +41,10 @@ export function SelectItem() {
             <span className="app-caption">Step 1 of 2</span>
             <h1 className="govbb-text-h2 app-mb-xs">What do you want a reminder for?</h1>
           </legend>
-          <p className="govbb-hint">Choose one option.</p>
+          <p className="govbb-hint">
+            If you have more than one document to track, you can add another
+            reminder at the end.
+          </p>
           {radioError && (
             <p className="govbb-error-message app-mt-xs" id="item-type-error">
               <span className="govbb-visually-hidden">Error: </span>
@@ -61,7 +64,12 @@ export function SelectItem() {
                     value={key}
                     checked={answers.itemType === key}
                     aria-invalid={!!radioError}
-                    onChange={() => setAnswers({ itemType: key })}
+                    onChange={() => {
+                      setAnswers({ itemType: key });
+                      // Clear the stale radio-group error as soon as the
+                      // user makes a selection; the summary box stays.
+                      if (radioError) setErrors(prev => prev.filter(e => !e.field.startsWith('item-type-')));
+                    }}
                   />
                   <label className="govbb-radio-item__label" htmlFor={`item-type-${key}`}>
                     {ITEM_LABELS[key]}
@@ -94,7 +102,12 @@ export function SelectItem() {
                           autoComplete="off"
                           aria-invalid={!!customError}
                           aria-describedby={customError ? 'item-custom-name-error' : undefined}
-                          onChange={e => setAnswers({ customName: e.target.value })}
+                          onChange={e => {
+                            setAnswers({ customName: e.target.value });
+                            if (customError && e.target.value.trim()) {
+                              setErrors(prev => prev.filter(err => err.field !== 'item-custom-name'));
+                            }
+                          }}
                         />
                       </div>
                     </div>

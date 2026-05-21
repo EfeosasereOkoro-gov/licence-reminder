@@ -93,16 +93,19 @@ export function downloadReminderICS(reminder: StoredReminder): void {
  */
 export function googleCalendarURL(reminder: StoredReminder): string {
   const expiry = new Date(reminder.expiryISO);
+  // Place the event 30 days BEFORE the expiry date so the user gets
+  // useful lead-time rather than a notification the day it expires.
+  const eventDate = addDays(expiry, -30);
 
   // All-day event: dates are YYYYMMDD with the second one EXCLUSIVE.
-  const start = formatDateUTC(expiry);
-  const end = formatDateUTC(addDays(expiry, 1));
+  const start = formatDateUTC(eventDate);
+  const end = formatDateUTC(addDays(eventDate, 1));
 
   const details = buildEventDescription(reminder);
 
   const params = new URLSearchParams({
     action: 'TEMPLATE',
-    text: `${reminder.itemLabel} expires`,
+    text: `Renew your ${reminder.itemLabel}`,
     dates: `${start}/${end}`,
     details,
   });
@@ -124,18 +127,20 @@ export function googleCalendarURL(reminder: StoredReminder): string {
  */
 export function outlookCalendarURL(reminder: StoredReminder): string {
   const expiry = new Date(reminder.expiryISO);
-  const expiryEnd = addDays(expiry, 1);
+  // 30 days before expiry — same reasoning as the Google URL.
+  const eventDate = addDays(expiry, -30);
+  const eventEnd = addDays(eventDate, 1);
 
   // Outlook accepts ISO-8601 date-only for all-day events.
-  const startdt = formatDateOnly(expiry);
-  const enddt = formatDateOnly(expiryEnd);
+  const startdt = formatDateOnly(eventDate);
+  const enddt = formatDateOnly(eventEnd);
 
   const body = buildEventDescription(reminder);
 
   const params = new URLSearchParams({
     path: '/calendar/action/compose',
     rru: 'addevent',
-    subject: `${reminder.itemLabel} expires`,
+    subject: `Renew your ${reminder.itemLabel}`,
     body,
     startdt,
     enddt,
@@ -147,6 +152,10 @@ export function outlookCalendarURL(reminder: StoredReminder): string {
 
 /** Shared event-description body used by every "open in X" link. */
 function buildEventDescription(reminder: StoredReminder): string {
+  const expiryLong = new Date(reminder.expiryISO).toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
   const reminderDates = reminder.reminderDates.map(iso =>
     new Date(iso).toLocaleDateString('en-GB', {
       day: 'numeric', month: 'long', year: 'numeric',
@@ -154,9 +163,10 @@ function buildEventDescription(reminder: StoredReminder): string {
   );
 
   return [
-    `Your ${reminder.itemLabel} expires today.`,
+    `Your ${reminder.itemLabel} expires on ${expiryLong}.`,
     '',
-    'We recommend setting up reminders for these dates inside your calendar:',
+    'This reminder is set 30 days before that date so you have time to renew.',
+    'You can add earlier reminders inside your calendar app — we suggest:',
     `• 90 days before — ${reminderDates[0]}`,
     `• 30 days before — ${reminderDates[1]}`,
     `• 7 days before — ${reminderDates[2]}`,

@@ -227,7 +227,7 @@ export function Start() {
           aria-expanded={photoOpen}
           aria-controls="photo-shortcut"
         >
-          {photoOpen ? 'Hide photo option' : 'Use a photo of your document'}
+          Use a photo of your document
         </button>
       </div>
 
@@ -507,6 +507,7 @@ export function Start() {
       <div className="app-prose">
         <p>You will need:</p>
         <ul>
+          <li>the type of document (for example, driver's licence or passport)</li>
           <li>the expiry date shown on your document (or a clear photo of it)</li>
         </ul>
       </div>
@@ -516,6 +517,10 @@ export function Start() {
         <p>
           To set up a reminder we only ask for the type of document and its
           expiry date.
+        </p>
+        <p>
+          We do not send you any messages. You save the reminder to your own
+          calendar.
         </p>
         <p>
           We do not ask for your name, address, date of birth, or any
