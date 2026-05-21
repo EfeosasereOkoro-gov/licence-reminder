@@ -14,7 +14,7 @@ function formatLongDate(d: Date): string {
   });
 }
 
-const ITEM_KEYS: ItemKey[] = ['drivers-licence', 'vehicle-registration', 'passport', 'permit', 'custom'];
+const ITEM_KEYS: ItemKey[] = ['id-card', 'drivers-licence', 'passport', 'vehicle-registration', 'permit', 'custom'];
 
 type PhotoStatus = 'idle' | 'working' | 'verifying' | 'error';
 type Verdict = 'pending' | 'confirmed' | 'editing';
@@ -28,6 +28,14 @@ export function Start() {
   usePageTitle(null);
 
   const { resetAnswers, setAnswers } = useJourney();
+
+  // Landing on the start page means "start over". Clear any in-progress
+  // answers from a previous run so users who navigate here via browser
+  // back (or by typing the URL) don't see stale values on Step 1 or 2.
+  useEffect(() => {
+    resetAnswers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Photo flow state
   const [photoOpen, setPhotoOpen] = useState(false);
@@ -259,7 +267,10 @@ export function Start() {
                 name="document-photo"
                 type="file"
                 accept="image/*"
-                capture="environment"
+                /* Without `capture`, mobile browsers offer both the
+                   camera and the photo library; with `capture` they
+                   force the camera. The library option is what
+                   users want when they've already taken the photo. */
                 className="govbb-visually-hidden"
                 onChange={handlePhoto}
                 disabled={photoStatus === 'working'}
@@ -519,8 +530,8 @@ export function Start() {
           expiry date.
         </p>
         <p>
-          We do not send you any messages. You save the reminder to your own
-          calendar.
+          We do not send you any messages and we do not keep a copy of your
+          reminder. You save it to your own calendar.
         </p>
         <p>
           We do not ask for your name, address, date of birth, or any

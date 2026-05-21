@@ -1,7 +1,8 @@
 export type ItemKey =
+  | 'id-card'
   | 'drivers-licence'
-  | 'vehicle-registration'
   | 'passport'
+  | 'vehicle-registration'
   | 'permit'
   | 'custom';
 
@@ -29,17 +30,19 @@ export interface StoredReminder {
 }
 
 export const ITEM_LABELS: Record<ItemKey, string> = {
+  'id-card': 'National ID Card',
   'drivers-licence': "Driver's Licence",
-  'vehicle-registration': 'Vehicle Registration',
   passport: 'Passport',
+  'vehicle-registration': 'Vehicle Registration',
   permit: 'Permit',
   custom: 'Other',
 };
 
 export const ITEM_HINTS: Record<ItemKey, string> = {
+  'id-card': 'Barbados National Identification Card',
   'drivers-licence': 'Issued by the Barbados Licensing Authority',
-  'vehicle-registration': 'Registration certificate for a car, van, or motorcycle',
   passport: 'Travel document',
+  'vehicle-registration': 'Registration certificate for a car, van, or motorcycle',
   permit: 'Work permit, business permit, or similar',
-  custom: 'Give it a short name (for example, "Boat licence")',
+  custom: "Anything else with an expiry date — you'll name it on the next step",
 };

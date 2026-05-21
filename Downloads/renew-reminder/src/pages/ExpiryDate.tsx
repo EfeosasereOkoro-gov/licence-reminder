@@ -116,10 +116,16 @@ export function ExpiryDate() {
             You can find the expiry date on your document. For example, 15 06 2027.
           </p>
           {anyError && (
-            <p className="govbb-error-message app-mt-xs" id="expiry-error">
-              <span className="govbb-visually-hidden">Error: </span>
-              {(dayError || monthError || yearError)?.message}
-            </p>
+            <div className="app-mt-xs" id="expiry-error">
+              {[dayError, monthError, yearError]
+                .filter((e): e is NonNullable<typeof e> => !!e)
+                .map(err => (
+                  <p key={err.field} className="govbb-error-message">
+                    <span className="govbb-visually-hidden">Error: </span>
+                    {err.message}
+                  </p>
+                ))}
+            </div>
           )}
 
           <div className="govbb-date-input app-mt-s">

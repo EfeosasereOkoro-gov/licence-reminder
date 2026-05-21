@@ -64,6 +64,7 @@ export function CheckAnswers() {
 
   return (
     <>
+      <span className="app-caption">Review</span>
       <h1 className="govbb-text-h2 app-mb-xm">Check your answers</h1>
 
       <dl className="app-summary-list">
@@ -92,9 +93,12 @@ export function CheckAnswers() {
       <h2 className="govbb-text-h3 app-mt-m app-mb-xs">Now set your reminder</h2>
       <div className="app-prose app-mb-xm">
         <p>
-          When you're ready, select <strong>Set reminder</strong> to save this
-          event to your calendar. We do not send any reminder messages or keep
-          a copy of your details.
+          When you're ready, select <strong>Set reminder</strong> to prepare the
+          calendar event. On the next page you'll save it to your own calendar.
+        </p>
+        <p>
+          We do not send you any messages and we do not keep a copy of your
+          reminder.
         </p>
       </div>
 

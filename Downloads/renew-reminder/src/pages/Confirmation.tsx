@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { googleCalendarURL, outlookCalendarURL } from '../ics';
+import { downloadICS, googleCalendarURL, outlookCalendarURL } from '../ics';
 import { navigate } from '../router';
 import { useJourney } from '../store';
 import { usePageTitle } from '../usePageTitle';
@@ -16,7 +16,7 @@ function formatLongDate(d: Date): string {
 export function Confirmation() {
   const { lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  usePageTitle('Your reminder is ready');
+  usePageTitle('Almost done — save it to your calendar');
 
   useEffect(() => {
     if (!lastReminder) {
@@ -29,31 +29,37 @@ export function Confirmation() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
+  // The reminder lands 30 days BEFORE the actual expiry date so the
+  // user has lead-time. We show this on the page so the copy doesn't
+  // mislead about what the saved event will look like in their calendar.
+  const reminderDate = new Date(expiry);
+  reminderDate.setDate(reminderDate.getDate() - 30);
 
   const handleStartAnother = () => {
-    // Carry the notification channel and contact field forward so a returning
-    // user doesn't re-enter their email or phone to set a second reminder.
     resetAnswers({ keepContact: true });
     navigate('/select-item');
   };
 
   return (
     <>
-      <section className="app-success" aria-labelledby="confirmation-title">
+      <section className="app-success app-success--action" aria-labelledby="confirmation-title">
         <h1 id="confirmation-title" ref={titleRef} tabIndex={-1} className="app-success__title">
-          Your reminder is ready
+          Almost done — save it to your calendar
         </h1>
         <p className="app-success__body">
           Your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
-          Save it to your calendar below.
+          We've prepared a reminder event for you. You're not finished until you save
+          it to your calendar.
         </p>
       </section>
 
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Add to your calendar</h2>
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Save it to your calendar</h2>
       <div className="app-prose">
         <p>
-          Open this reminder in your calendar. The event will be pre-filled
-          with the expiry date — review it and save it to your account.
+          The event will be added to your calendar on{' '}
+          <strong>{formatLongDate(reminderDate)}</strong> (30 days before your
+          document expires) so you have time to renew. Select whichever calendar
+          you use:
         </p>
       </div>
       <div className="govbb-btn-group app-mt-s">
@@ -73,17 +79,30 @@ export function Confirmation() {
         >
           Add to Microsoft Outlook
         </a>
+        <button
+          type="button"
+          className="govbb-btn--secondary"
+          onClick={() => downloadICS(lastReminder)}
+        >
+          Add to Apple Calendar
+        </button>
       </div>
+      <p className="govbb-hint app-mt-xs">
+        Apple Calendar downloads a small file; opening it on your phone or laptop
+        adds the event.
+      </p>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
       <div className="app-prose">
         <p>
-          Tap one of the buttons above to save the event to your Google Calendar
-          or Microsoft Outlook account. Add reminders inside your calendar app to
-          be notified in advance.
+          Select one of the buttons above to save the event to your calendar. Your
+          calendar app will show the reminder on{' '}
+          <strong>{formatLongDate(reminderDate)}</strong>. You can add earlier
+          reminders inside your calendar app if you want more notice.
         </p>
         <p>
-          We do not keep a copy of your reminder. Read our{' '}
+          We do not send you any messages and we do not keep a copy of your
+          reminder. Read our{' '}
           <a className="govbb-link" href="#/privacy">privacy notice</a>.
         </p>
       </div>
@@ -91,8 +110,8 @@ export function Confirmation() {
       <h2 className="govbb-text-h3 app-mt-m app-mb-s">Have another reminder to set?</h2>
       <div className="app-prose">
         <p>
-          Set a reminder for another document — for example, a vehicle
-          registration or a passport. It takes less than a minute.
+          Set a reminder for another document — for example, a passport or a
+          vehicle registration. It takes less than a minute.
         </p>
       </div>
       <div className="govbb-btn-group app-mt-s">
@@ -109,8 +128,10 @@ export function Confirmation() {
           rel="noopener noreferrer"
         >
           What did you think of this service?
-        </a>
-        {' '}(takes 30 seconds)
+        </a>{' '}
+        <span className="govbb-hint" style={{ display: 'inline' }}>
+          (takes 30 seconds)
+        </span>
       </p>
     </>
   );

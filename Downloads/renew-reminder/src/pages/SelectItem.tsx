@@ -5,7 +5,10 @@ import { useJourney } from '../store';
 import { ITEM_HINTS, ITEM_LABELS, type ItemKey } from '../types';
 import { usePageTitle } from '../usePageTitle';
 
-const ITEMS: ItemKey[] = ['drivers-licence', 'vehicle-registration', 'passport', 'permit', 'custom'];
+// Ordered by likely frequency in Barbados: the National ID Card is held
+// by virtually every adult and renews on a known cycle, followed by
+// driver's licence and passport.
+const ITEMS: ItemKey[] = ['id-card', 'drivers-licence', 'passport', 'vehicle-registration', 'permit', 'custom'];
 
 export function SelectItem() {
   const { answers, setAnswers } = useJourney();
@@ -16,7 +19,7 @@ export function SelectItem() {
     e.preventDefault();
     const next: ErrorItem[] = [];
     if (!answers.itemType) {
-      next.push({ field: 'item-type-drivers-licence', message: 'Select what you want to be reminded about' });
+      next.push({ field: 'item-type-id-card', message: 'Select what you want to be reminded about' });
     }
     if (answers.itemType === 'custom' && !answers.customName.trim()) {
       next.push({ field: 'item-custom-name', message: 'Enter a name for the reminder' });
@@ -84,7 +87,7 @@ export function SelectItem() {
                       <label className="govbb-label" htmlFor="item-custom-name">
                         Name your reminder
                       </label>
-                      <span className="govbb-hint">For example, "Boat licence" or "Pharmacy permit"</span>
+                      <span className="govbb-hint">Up to 60 characters. Use the name on the document, like "Pharmacy permit" or "Fishing licence".</span>
                       {customError && (
                         <span className="govbb-error-message" id="item-custom-name-error">
                           <span className="govbb-visually-hidden">Error: </span>
