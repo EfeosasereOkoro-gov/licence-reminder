@@ -88,8 +88,15 @@ export function Confirmation() {
         </p>
       </div>
 
-      <div className="govbb-btn-group app-mt-m">
-        <button type="button" className="govbb-btn--tertiary" onClick={handleStartAnother}>
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Have another reminder to set?</h2>
+      <div className="app-prose">
+        <p>
+          Set a reminder for another document — for example, a vehicle
+          registration or a passport. It takes less than a minute.
+        </p>
+      </div>
+      <div className="govbb-btn-group app-mt-s">
+        <button type="button" className="govbb-btn" onClick={handleStartAnother}>
           Set another reminder
         </button>
       </div>

@@ -213,7 +213,7 @@ export function Start() {
           Use this service to set a free reminder before your driver's licence,
           vehicle registration, passport, or other government permit runs out.
         </p>
-        <p>It takes about 2 minutes.</p>
+        <p>It takes less than a minute.</p>
       </div>
 
       <div className="govbb-btn-group">
