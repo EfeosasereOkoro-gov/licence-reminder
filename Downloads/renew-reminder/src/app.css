@@ -247,11 +247,11 @@
 .app-prose ul { font-size: var(--font-size-body); line-height: var(--line-height-body); padding-inline-start: var(--spacing-m); list-style: disc; }
 .app-prose ul li + li { margin-top: var(--spacing-xs); }
 
-/* Footer crest sizing override — the supplied crest svg is the full coat of arms. */
+/* Footer crest — display the supplied coat-of-arms SVG at its native
+   colours (no brightness/invert filter). */
 .app-footer-crest {
   height: 6rem;
   width: auto;
-  filter: brightness(0) invert(1);
 }
 
 /* ── Photo-extract shortcut on the start page ───────────────────────────── */
