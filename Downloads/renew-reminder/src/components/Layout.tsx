@@ -18,7 +18,6 @@ export function Layout({ children }: LayoutProps) {
                   src={ASSET('assets/images/govbb-creast.svg')}
                   alt=""
                   className="govbb-official-banner__icon"
-                  style={{ filter: 'brightness(0) invert(1)' }}
                 />
               </span>
               <span className="govbb-official-banner__text">
