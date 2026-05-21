@@ -106,8 +106,6 @@ function buildEventDescription(reminder: StoredReminder): string {
     `Your ${reminder.itemLabel} expires on ${expiryLong}.`,
     '',
     `This reminder lands ${reminder.reminderOffset} days before that date so you have time to renew.`,
-    '',
-    `Reference: ${reminder.id} (quote this if you contact the Government of Barbados about this reminder)`,
   ].join('\n');
 }
 
