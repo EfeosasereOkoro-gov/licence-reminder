@@ -50,6 +50,14 @@ It does **not** collect or store:
 
 No backend, no database, no email. The reminder lives in your own calendar.
 
+## Why does it look like this?
+
+The substantive design and architecture decisions — no backend, no email
+sending, in-browser OCR, dual calendar deep-links, 30-day event offset
+— are documented in [`docs/decisions.md`](docs/decisions.md). Start
+there if you want to understand why the service is shaped the way it
+is.
+
 ## Tech stack
 
 | Layer | Library |
