@@ -53,17 +53,29 @@ function validateExpiryDate(d: string, m: string, y: string): ErrorItem[] {
   if (dedup.length > 0) return dedup;
 
   // All three are present and individually plausible — check the date
-  // exists on the calendar (e.g., 30 Feb 2027 fails here).
+  // exists on the calendar (e.g., 30 Feb 2027 fails here). When the
+  // failure is about the date as a whole rather than one field, flag
+  // all three so they all get the red border.
   if (!isValidDate(day, month, year)) {
-    return [{ field: 'expiry-day', message: 'Enter a real date — for example, 15 06 2027' }];
+    const msg = 'Enter a real date — for example, 15 06 2027';
+    return [
+      { field: 'expiry-day', message: msg },
+      { field: 'expiry-month', message: msg },
+      { field: 'expiry-year', message: msg },
+    ];
   }
 
-  // Past dates
+  // Past dates — also a whole-date failure; highlight all three.
   const expiry = new Date(year, month - 1, day);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   if (expiry.getTime() < today.getTime()) {
-    return [{ field: 'expiry-day', message: 'The expiry date must be today or in the future' }];
+    const msg = 'The expiry date must be today or in the future';
+    return [
+      { field: 'expiry-day', message: msg },
+      { field: 'expiry-month', message: msg },
+      { field: 'expiry-year', message: msg },
+    ];
   }
 
   return [];
@@ -117,14 +129,18 @@ export function ExpiryDate() {
           </p>
           {anyError && (
             <div className="app-mt-xs" id="expiry-error">
-              {[dayError, monthError, yearError]
-                .filter((e): e is NonNullable<typeof e> => !!e)
-                .map(err => (
-                  <p key={err.field} className="govbb-error-message">
-                    <span className="govbb-visually-hidden">Error: </span>
-                    {err.message}
-                  </p>
-                ))}
+              {(() => {
+                const seen = new Set<string>();
+                return [dayError, monthError, yearError]
+                  .filter((e): e is NonNullable<typeof e> => !!e)
+                  .filter(err => seen.has(err.message) ? false : (seen.add(err.message), true))
+                  .map(err => (
+                    <p key={err.field} className="govbb-error-message">
+                      <span className="govbb-visually-hidden">Error: </span>
+                      {err.message}
+                    </p>
+                  ));
+              })()}
             </div>
           )}
 

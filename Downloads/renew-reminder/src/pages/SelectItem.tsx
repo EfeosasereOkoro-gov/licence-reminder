@@ -21,8 +21,13 @@ export function SelectItem() {
     if (!answers.itemType) {
       next.push({ field: 'item-type-id-card', message: 'Select what you want to be reminded about' });
     }
-    if (answers.itemType === 'custom' && !answers.customName.trim()) {
-      next.push({ field: 'item-custom-name', message: 'Enter a name for the reminder' });
+    if (answers.itemType === 'custom') {
+      const name = answers.customName.trim();
+      if (!name) {
+        next.push({ field: 'item-custom-name', message: 'Enter a name for the reminder' });
+      } else if (name.length > 60) {
+        next.push({ field: 'item-custom-name', message: 'Name must be 60 characters or less' });
+      }
     }
     setErrors(next);
     if (next.length === 0) {

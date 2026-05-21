@@ -49,5 +49,5 @@ export const ITEM_HINTS: Record<ItemKey, string> = {
   passport: 'Travel document',
   'vehicle-registration': 'Registration certificate for a car, van, or motorcycle',
   permit: 'Work permit, business permit, or similar',
-  custom: "Anything else with an expiry date — you'll name it on the next step",
+  custom: "Anything else with an expiry date — you'll be asked to give it a name below",
 };

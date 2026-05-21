@@ -21,6 +21,17 @@ export function ErrorSummary({ errors }: ErrorSummaryProps) {
 
   if (errors.length === 0) return null;
 
+  // Dedupe by message — a whole-form error (e.g. "date must be in the
+  // future") may apply to multiple fields, but the user only needs to
+  // see one summary entry for it. The link still points at the first
+  // field with that message so focus management still works.
+  const seen = new Set<string>();
+  const unique = errors.filter(err => {
+    if (seen.has(err.message)) return false;
+    seen.add(err.message);
+    return true;
+  });
+
   return (
     <div
       ref={ref}
@@ -33,7 +44,7 @@ export function ErrorSummary({ errors }: ErrorSummaryProps) {
         There is a problem
       </h2>
       <ul className="govbb-error-summary__list app-mt-xs">
-        {errors.map(err => (
+        {unique.map(err => (
           <li key={err.field}>
             <a className="govbb-error-summary__link" href={`#${err.field}`}>
               {err.message}

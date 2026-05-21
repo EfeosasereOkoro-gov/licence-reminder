@@ -52,7 +52,32 @@ export function CheckAnswers() {
     Number(answers.expiryDay),
   );
 
+  // For each candidate offset, work out whether it would put the
+  // reminder date in the past. If so, that option isn't actually usable
+  // — we can't add an event to a calendar that's already happened.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isOffsetValid = (days: number) => {
+    const d = new Date(expiry);
+    d.setDate(d.getDate() - days);
+    return d.getTime() >= today.getTime();
+  };
+  const anyOffsetValid = OFFSET_CHOICES.some(c => isOffsetValid(c.days));
+
+  // If the currently-selected offset is invalid but a longer-notice one
+  // is, drop down to the longest available. The user can still change
+  // it themselves.
+  useEffect(() => {
+    if (!anyOffsetValid) return;
+    if (!isOffsetValid(answers.reminderOffset)) {
+      const next = OFFSET_CHOICES.find(c => isOffsetValid(c.days));
+      if (next) setAnswers({ reminderOffset: next.days });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiry.getTime()]);
+
   const handleConfirm = () => {
+    if (!isOffsetValid(answers.reminderOffset)) return; // safety; button is disabled in this case
     const reminderDate = computeReminderDate(expiry, answers.reminderOffset);
     const retainUntil = computeRetainUntil(expiry);
     saveReminder({
@@ -108,6 +133,7 @@ export function CheckAnswers() {
             const id = `reminder-offset-${days}`;
             const reminderDate = new Date(expiry);
             reminderDate.setDate(reminderDate.getDate() - days);
+            const valid = isOffsetValid(days);
             return (
               <div className="govbb-radio-item" key={days}>
                 <input
@@ -117,12 +143,15 @@ export function CheckAnswers() {
                   className="govbb-radio"
                   value={days}
                   checked={answers.reminderOffset === days}
+                  disabled={!valid}
                   onChange={() => setAnswers({ reminderOffset: days })}
                 />
                 <label className="govbb-radio-item__label" htmlFor={id}>
                   {label}
                   <span className="govbb-hint" style={{ display: 'block' }}>
-                    {formatLongDate(reminderDate)}
+                    {valid
+                      ? formatLongDate(reminderDate)
+                      : 'Already passed — your document expires too soon for this reminder'}
                   </span>
                 </label>
               </div>
@@ -130,6 +159,17 @@ export function CheckAnswers() {
           })}
         </div>
       </fieldset>
+
+      {!anyOffsetValid && (
+        <div className="app-disclaimer app-mt-m" role="note">
+          <p className="app-disclaimer__title">Your document expires too soon to set a useful reminder</p>
+          <p>
+            Every reminder we offer would land in the past for an expiry of{' '}
+            {formatLongDate(expiry)}. You should renew your{' '}
+            <strong>{itemLabel}</strong> as soon as possible.
+          </p>
+        </div>
+      )}
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-xs">Now set your reminder</h2>
       <div className="app-prose app-mb-xm">
@@ -147,7 +187,12 @@ export function CheckAnswers() {
         <button type="button" className="govbb-btn--secondary" onClick={() => navigate('/expiry-date')}>
           Previous
         </button>
-        <button type="button" className="govbb-btn" onClick={handleConfirm}>
+        <button
+          type="button"
+          className="govbb-btn"
+          onClick={handleConfirm}
+          disabled={!anyOffsetValid}
+        >
           Set reminder
         </button>
       </div>
