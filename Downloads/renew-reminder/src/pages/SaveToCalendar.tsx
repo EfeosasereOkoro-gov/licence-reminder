@@ -13,10 +13,16 @@ function formatLongDate(d: Date): string {
   });
 }
 
-export function Confirmation() {
+/**
+ * Stand-alone page whose entire purpose is for the user to save the
+ * reminder to their own calendar. Deliberately *not* framed as a
+ * success / confirmation page — the user hasn't done anything yet.
+ * The page IS the action.
+ */
+export function SaveToCalendar() {
   const { lastReminder, resetAnswers } = useJourney();
   const titleRef = useRef<HTMLHeadingElement>(null);
-  usePageTitle('Almost done — save it to your calendar');
+  usePageTitle('Save your reminder to your calendar');
 
   useEffect(() => {
     if (!lastReminder) {
@@ -29,11 +35,9 @@ export function Confirmation() {
   if (!lastReminder) return null;
 
   const expiry = new Date(lastReminder.expiryISO);
-  // The reminder lands 30 days BEFORE the actual expiry date so the
-  // user has lead-time. We show this on the page so the copy doesn't
-  // mislead about what the saved event will look like in their calendar.
-  const reminderDate = new Date(expiry);
-  reminderDate.setDate(reminderDate.getDate() - 30);
+  const reminderDates = lastReminder.reminderDates.map(d => new Date(d));
+  const offsets = lastReminder.reminderOffsets;
+  const multi = offsets.length > 1;
 
   const handleStartAnother = () => {
     resetAnswers({ keepContact: true });
@@ -42,27 +46,33 @@ export function Confirmation() {
 
   return (
     <>
-      <section className="app-success app-success--action" aria-labelledby="confirmation-title">
-        <h1 id="confirmation-title" ref={titleRef} tabIndex={-1} className="app-success__title">
-          Almost done — save it to your calendar
-        </h1>
-        <p className="app-success__body">
-          Your <strong>{lastReminder.itemLabel}</strong> expires on {formatLongDate(expiry)}.
-          We've prepared a reminder event for you. You're not finished until you save
-          it to your calendar.
-        </p>
-      </section>
-
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Save it to your calendar</h2>
+      <h1 ref={titleRef} tabIndex={-1} className="govbb-text-h2 app-mb-xs">
+        Save your reminder to your calendar
+      </h1>
       <div className="app-prose">
-        <p>
-          The event will be added to your calendar on{' '}
-          <strong>{formatLongDate(reminderDate)}</strong> (30 days before your
-          document expires) so you have time to renew. Select whichever calendar
-          you use:
+        <p className="govbb-text-body-lg">
+          Your <strong>{lastReminder.itemLabel}</strong> expires on{' '}
+          {formatLongDate(expiry)}.
         </p>
+        <p>
+          {multi
+            ? `You've chosen ${offsets.length} reminders. We'll add ${offsets.length} events to your calendar:`
+            : 'We\'ve prepared a reminder event for:'}
+        </p>
+        <ul>
+          {reminderDates.map((d, i) => (
+            <li key={d.toISOString()}>
+              <strong>{formatLongDate(d)}</strong>{' '}
+              <span className="govbb-hint" style={{ display: 'inline' }}>
+                ({offsets[i]} days before expiry)
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <div className="govbb-btn-group app-mt-s">
+
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">Choose your calendar</h2>
+      <div className="govbb-btn-group">
         <a
           className="govbb-btn"
           href={googleCalendarURL(lastReminder)}
@@ -87,19 +97,21 @@ export function Confirmation() {
           Add to Apple Calendar
         </button>
       </div>
-      <p className="govbb-hint app-mt-xs">
-        Apple Calendar downloads a small file; opening it on your phone or laptop
-        adds the event.
-      </p>
 
-      <h2 className="govbb-text-h3 app-mt-m app-mb-s">What happens next</h2>
+      {multi && (
+        <div className="app-disclaimer app-mt-s" role="note">
+          <p className="app-disclaimer__title">If you use Google or Outlook</p>
+          <p>
+            The button opens the earliest reminder ({offsets[0]} days before).
+            The other dates are listed in the event description — you'll need to
+            add those reminders to your calendar yourself. <strong>Apple
+            Calendar</strong> gets all {offsets.length} events in one file.
+          </p>
+        </div>
+      )}
+
+      <h2 className="govbb-text-h3 app-mt-m app-mb-s">After you've saved it</h2>
       <div className="app-prose">
-        <p>
-          Select one of the buttons above to save the event to your calendar. Your
-          calendar app will show the reminder on{' '}
-          <strong>{formatLongDate(reminderDate)}</strong>. You can add earlier
-          reminders inside your calendar app if you want more notice.
-        </p>
         <p>
           We do not send you any messages and we do not keep a copy of your
           reminder. Read our{' '}

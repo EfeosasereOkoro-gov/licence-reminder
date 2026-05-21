@@ -144,33 +144,9 @@
   margin: 0;
 }
 
-/* Success panel — green slab for the confirmation screen. */
-.app-success {
-  background: var(--color-green-00);
-  color: var(--color-white-00);
-  padding: var(--spacing-m) var(--spacing-xm);
-  border-radius: var(--radius-sm);
-}
-
-/* "Action still required" variant — used when the user has reached
-   the confirmation screen but still has a button to click for the
-   reminder to actually take effect. Yellow signals "your turn",
-   green would imply "all done". */
-.app-success--action {
-  background: var(--color-yellow-100);
-  color: var(--color-black-00);
-}
-
-.app-success__title {
-  font-size: var(--font-size-h2);
-  line-height: var(--line-height-h2);
-  font-weight: var(--font-weight-bold);
-  margin: 0;
-}
-
-.app-success__body {
-  margin-top: var(--spacing-xs);
-}
+/* (The previous app-success / app-success--action banners were
+   removed when the save-to-calendar action moved to its own page —
+   the page IS the action now, no banner needed.) */
 
 /* Summary list — used on the check-answers page. */
 .app-summary-list {

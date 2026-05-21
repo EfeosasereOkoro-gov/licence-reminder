@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ErrorSummary, type ErrorItem } from '../components/ErrorSummary';
 import { navigate } from '../router';
 import {
   computeRetainUntil,
@@ -18,12 +19,18 @@ function formatLongDate(d: Date): string {
   });
 }
 
+const OFFSET_CHOICES: { days: number; label: string }[] = [
+  { days: 90, label: '90 days before' },
+  { days: 30, label: '30 days before' },
+  { days: 7,  label: '7 days before' },
+];
+
 export function CheckAnswers() {
-  const { answers, saveReminder } = useJourney();
-  usePageTitle('Check your answers');
+  const { answers, setAnswers, saveReminder } = useJourney();
+  const [errors, setErrors] = useState<ErrorItem[]>([]);
+  usePageTitle('Check your answers', errors.length > 0);
 
   useEffect(() => {
-    // Guard against landing here without enough data.
     if (
       !answers.itemType ||
       !answers.expiryDay ||
@@ -47,23 +54,44 @@ export function CheckAnswers() {
     Number(answers.expiryDay),
   );
 
+  const toggleOffset = (days: number, checked: boolean) => {
+    const next = checked
+      ? [...new Set([...answers.reminderOffsets, days])].sort((a, b) => b - a)
+      : answers.reminderOffsets.filter(o => o !== days);
+    setAnswers({ reminderOffsets: next });
+    if (errors.length && next.length > 0) {
+      setErrors(prev => prev.filter(e => e.field !== 'reminder-offsets'));
+    }
+  };
+
   const handleConfirm = () => {
-    const reminderDates = computeReminderDates(expiry);
+    if (answers.reminderOffsets.length === 0) {
+      setErrors([{ field: 'reminder-offsets-90', message: 'Choose at least one reminder' }]);
+      return;
+    }
+    setErrors([]);
+
+    const reminderDates = computeReminderDates(expiry, answers.reminderOffsets);
     const retainUntil = computeRetainUntil(expiry);
     saveReminder({
       id: generateReminderId(),
       itemLabel,
       expiryISO: expiry.toISOString(),
       channel: 'email',
+      reminderOffsets: answers.reminderOffsets,
       reminderDates: reminderDates.map(d => d.toISOString()),
       createdAtISO: new Date().toISOString(),
       retainUntilISO: retainUntil.toISOString(),
     });
-    navigate('/confirmation');
+    navigate('/save-to-calendar');
   };
+
+  const offsetsError = errors.find(e => e.field.startsWith('reminder-offsets'));
 
   return (
     <>
+      <ErrorSummary errors={errors} />
+
       <span className="app-caption">Review</span>
       <h1 className="govbb-text-h2 app-mb-xm">Check your answers</h1>
 
@@ -87,14 +115,58 @@ export function CheckAnswers() {
             </a>
           </dd>
         </div>
-
       </dl>
+
+      <fieldset className="govbb-fieldset app-mt-m" aria-describedby={offsetsError ? 'reminder-offsets-error' : 'reminder-offsets-hint'}>
+        <legend className="govbb-fieldset__legend">
+          <h2 className="govbb-text-h3 app-mb-xs">When should we remind you?</h2>
+        </legend>
+        <p className="govbb-hint" id="reminder-offsets-hint">
+          Choose one or more. We'll create a calendar event for each.
+        </p>
+        {offsetsError && (
+          <p className="govbb-error-message app-mt-xs" id="reminder-offsets-error">
+            <span className="govbb-visually-hidden">Error: </span>
+            {offsetsError.message}
+          </p>
+        )}
+
+        <div className="app-stack-s app-mt-s">
+          {OFFSET_CHOICES.map(({ days, label }) => {
+            const id = `reminder-offsets-${days}`;
+            const checked = answers.reminderOffsets.includes(days);
+            const reminderDate = new Date(expiry);
+            reminderDate.setDate(reminderDate.getDate() - days);
+            return (
+              <div className="govbb-checkbox-item" key={days}>
+                <input
+                  id={id}
+                  name="reminder-offset"
+                  type="checkbox"
+                  className="govbb-checkbox"
+                  checked={checked}
+                  aria-invalid={!!offsetsError}
+                  onChange={e => toggleOffset(days, e.target.checked)}
+                />
+                <label className="govbb-checkbox-item__label" htmlFor={id}>
+                  {label}
+                  <span className="govbb-hint" style={{ display: 'block' }}>
+                    {formatLongDate(reminderDate)}
+                  </span>
+                </label>
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
 
       <h2 className="govbb-text-h3 app-mt-m app-mb-xs">Now set your reminder</h2>
       <div className="app-prose app-mb-xm">
         <p>
           When you're ready, select <strong>Set reminder</strong> to prepare the
-          calendar event. On the next page you'll save it to your own calendar.
+          calendar event{answers.reminderOffsets.length > 1 ? 's' : ''}. On the next
+          page you'll save{answers.reminderOffsets.length > 1 ? ' them' : ' it'} to
+          your own calendar.
         </p>
         <p>
           We do not send you any messages and we do not keep a copy of your

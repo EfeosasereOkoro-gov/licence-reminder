@@ -13,7 +13,7 @@ import { Start } from './pages/Start';
 import { SelectItem } from './pages/SelectItem';
 import { ExpiryDate } from './pages/ExpiryDate';
 import { CheckAnswers } from './pages/CheckAnswers';
-import { Confirmation } from './pages/Confirmation';
+import { SaveToCalendar } from './pages/SaveToCalendar';
 import { Privacy } from './pages/Privacy';
 import { Accessibility } from './pages/Accessibility';
 
@@ -50,7 +50,7 @@ export default function App() {
       case '/select-item': return <SelectItem />;
       case '/expiry-date': return <ExpiryDate />;
       case '/check-answers': return <CheckAnswers />;
-      case '/confirmation': return <Confirmation />;
+      case '/save-to-calendar': return <SaveToCalendar />;
       case '/privacy': return <Privacy />;
       case '/accessibility': return <Accessibility />;
       default: return <Start />;
