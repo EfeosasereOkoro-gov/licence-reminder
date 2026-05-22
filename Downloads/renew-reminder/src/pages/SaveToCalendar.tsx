@@ -97,7 +97,14 @@ export function SaveToCalendar() {
         <p>
           We do not send you any messages and we do not keep a copy of your
           reminder. Read our{' '}
-          <a className="govbb-link" href="#/privacy">privacy notice</a>.
+          <a
+            className="govbb-link"
+            href="https://alpha.gov.bb/terms-conditions"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            privacy notice
+          </a>.
         </p>
       </div>
 

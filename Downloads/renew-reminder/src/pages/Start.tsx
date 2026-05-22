@@ -536,7 +536,14 @@ export function Start() {
         <p>
           We do not ask for your name, address, date of birth, or any
           document numbers. Read our{' '}
-          <a className="govbb-link" href="#/privacy">privacy notice</a>.
+          <a
+            className="govbb-link"
+            href="https://alpha.gov.bb/terms-conditions"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            privacy notice
+          </a>.
         </p>
       </div>
     </div>
