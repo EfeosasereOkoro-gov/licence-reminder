@@ -16,32 +16,8 @@
   outline-offset: 0;
 }
 
-/* Service header — additional row below the GovBB yellow bar showing the service name. */
-.service-bar {
-  background: var(--color-white-00);
-  border-bottom: 1px solid var(--color-grey-00);
-  width: 100%;
-}
-
-.service-bar__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-s);
-  padding-block: var(--spacing-s);
-  flex-wrap: wrap;
-}
-
-.service-bar__name {
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-h4);
-  line-height: var(--line-height-h4);
-  color: var(--color-text);
-  text-decoration: none;
-}
-
 /* Alpha-phase notice — matches the alpha.gov.bb pattern: a thin
-   yellow rule at the top, a pale background band, and a centred
+   yellow rule at the top, a pale background band, and a left-aligned
    "This page is in Alpha." line where Alpha is a link. */
 .alpha-notice {
   background: var(--color-blue-10);
@@ -53,7 +29,6 @@
   font-size: var(--font-size-caption);
   line-height: var(--line-height-caption);
   color: var(--color-text);
-  text-align: center;
   padding-block: var(--spacing-xs);
   margin: 0;
 }

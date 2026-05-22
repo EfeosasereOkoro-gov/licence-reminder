@@ -37,14 +37,6 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
 
-        <div className="service-bar">
-          <div className="govbb-container">
-            <div className="service-bar__inner">
-              <a href="#/" className="service-bar__name">Renew Reminder</a>
-            </div>
-          </div>
-        </div>
-
         <div className="alpha-notice">
           <div className="govbb-container">
             <p className="alpha-notice__text">
