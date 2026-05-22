@@ -41,13 +41,23 @@ export function Layout({ children }: LayoutProps) {
           <div className="govbb-container">
             <div className="service-bar__inner">
               <a href="#/" className="service-bar__name">Renew Reminder</a>
-              <span className="service-bar__phase">
-                <span className="service-bar__phase-tag">Alpha</span>
-                <span className="service-bar__phase-text">
-                  This is a new service — your feedback will help us improve it.
-                </span>
-              </span>
             </div>
+          </div>
+        </div>
+
+        <div className="alpha-notice">
+          <div className="govbb-container">
+            <p className="alpha-notice__text">
+              This page is in{' '}
+              <a
+                className="govbb-link"
+                href="https://alpha.gov.bb/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Alpha
+              </a>.
+            </p>
           </div>
         </div>
       </header>
