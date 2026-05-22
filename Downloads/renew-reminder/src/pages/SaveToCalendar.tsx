@@ -114,19 +114,6 @@ export function SaveToCalendar() {
         </button>
       </div>
 
-      <p className="app-mt-m">
-        <a
-          className="govbb-link"
-          href="https://forms.gle/example"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          What did you think of this service?
-        </a>{' '}
-        <span className="govbb-hint" style={{ display: 'inline' }}>
-          (takes 30 seconds)
-        </span>
-      </p>
     </>
   );
 }

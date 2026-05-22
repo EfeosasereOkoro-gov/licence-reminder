@@ -33,6 +33,34 @@
   margin: 0;
 }
 
+/* Page-feedback panel — matches the alpha.gov.bb "Was this helpful?"
+   component. Yellow-bordered, pale-yellow fill, sits between the
+   page content and the footer. Appears on every page via Layout. */
+.app-feedback {
+  border: 2px solid var(--color-yellow-100);
+  background: var(--color-yellow-40);
+  padding: var(--spacing-xm);
+  border-radius: var(--radius-sm);
+  margin-top: var(--spacing-l);
+}
+
+.app-feedback__title {
+  font-size: var(--font-size-h4);
+  line-height: var(--line-height-h4);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.app-feedback p {
+  margin: 0;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+.app-feedback p + p {
+  margin-top: var(--spacing-xs);
+}
+
 /* Two-thirds main column on wide screens (GDS pattern). */
 .app-main {
   padding-block: var(--spacing-m);

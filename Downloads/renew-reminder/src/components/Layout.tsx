@@ -55,7 +55,26 @@ export function Layout({ children }: LayoutProps) {
       </header>
 
       <main id="main-content" className="govbb-container app-main" role="main" tabIndex={-1}>
-        <div className="app-main__col">{children}</div>
+        <div className="app-main__col">
+          {children}
+
+          <aside className="app-feedback" aria-labelledby="feedback-title">
+            <h2 id="feedback-title" className="app-feedback__title">
+              Was this helpful?
+            </h2>
+            <p>Give us your feedback about this page.</p>
+            <p>
+              <a
+                className="govbb-link"
+                href="https://alpha.gov.bb/feedback"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Help us improve alpha.gov.bb
+              </a>
+            </p>
+          </aside>
+        </div>
       </main>
 
       <footer className="govbb-footer">
