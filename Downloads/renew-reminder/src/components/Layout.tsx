@@ -81,9 +81,30 @@ export function Layout({ children }: LayoutProps) {
         <div className="govbb-container">
           <div className="govbb-footer__inner">
             <nav className="govbb-footer__nav" aria-label="Footer">
-              <a className="govbb-footer__link" href="#/privacy">Privacy</a>
-              <a className="govbb-footer__link" href="#/accessibility">Accessibility statement</a>
-              <a className="govbb-footer__link" href="https://www.gov.bb">Government of Barbados</a>
+              <a
+                className="govbb-footer__link"
+                href="https://alpha.gov.bb/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Home
+              </a>
+              <a
+                className="govbb-footer__link"
+                href="https://alpha.gov.bb/terms-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Terms &amp; Conditions
+              </a>
+              <a
+                className="govbb-footer__link"
+                href="https://job-boards.greenhouse.io/govtechbarbados?gh_src=ef2pb1uy9us"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Careers
+              </a>
             </nav>
             <hr className="govbb-footer__divider" />
             <div className="govbb-footer__end">
