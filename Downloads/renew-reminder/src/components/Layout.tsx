@@ -43,7 +43,7 @@ export function Layout({ children }: LayoutProps) {
               This page is in{' '}
               <a
                 className="govbb-link"
-                href="https://alpha.gov.bb/"
+                href="https://alpha.gov.bb/what-we-mean-by-alpha"
                 target="_blank"
                 rel="noopener noreferrer"
               >
